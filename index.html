@@ -8,17 +8,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0e0c;--panel:#101513;--panel2:#141a17;--panel3:#1a211d;--line:#222a26;--line2:#2c3631;
-  --text:#e9f0eb;--muted:#869489;--dim:#5d6a62;--input:#0c110f;
-  --accent:#22c55e;--accent2:#16a34a;--soft:rgba(34,197,94,.12);--glow:rgba(34,197,94,.35);
+  --bg:#08080a;--panel:#111114;--panel2:#16161a;--panel3:#1d1d22;--line:#24242a;--line2:#2f2f36;
+  --text:#f2f2f4;--muted:#8d8d97;--dim:#5f5f69;--input:#0c0c0f;
+  --accent:#e11d2e;--accent2:#b91524;--soft:rgba(225,29,46,.13);--glow:rgba(225,29,46,.4);
+  --ok:#22c55e;--okSoft:rgba(34,197,94,.13);--okGlow:rgba(34,197,94,.38);
   --blue:#3b82f6;--blueSoft:rgba(59,130,246,.16);--amber:#f59e0b;--amberSoft:rgba(245,158,11,.15);
   --red:#ef4444;--redSoft:rgba(239,68,68,.15);--graySoft:rgba(148,163,184,.10);
   --radius:12px;--shadow:0 10px 30px rgba(0,0,0,.35);
 }
 [data-theme=light]{
-  --bg:#eef3f0;--panel:#ffffff;--panel2:#f6f9f7;--panel3:#edf2ef;--line:#dde5e0;--line2:#cfd9d3;
-  --text:#14211a;--muted:#5b6a61;--dim:#8a978f;--input:#ffffff;--soft:rgba(22,163,74,.10);--glow:rgba(22,163,74,.25);
-  --shadow:0 8px 24px rgba(20,40,30,.08);
+  --bg:#f3f3f5;--panel:#ffffff;--panel2:#f7f7f9;--panel3:#eeeef1;--line:#e2e2e7;--line2:#d4d4db;
+  --text:#141418;--muted:#5f5f6b;--dim:#8f8f99;--input:#ffffff;--soft:rgba(200,20,38,.08);--glow:rgba(200,20,38,.3);
+  --accent:#c8142a;--accent2:#a00f20;--ok:#16a34a;--okSoft:rgba(22,163,74,.10);--okGlow:rgba(22,163,74,.3);
+  --shadow:0 8px 24px rgba(20,20,30,.08);
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
@@ -33,7 +35,7 @@ a{color:var(--accent)}
 /* ---------- buttons & inputs ---------- */
 .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--panel2);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13px;transition:.15s;white-space:nowrap}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#04140a}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:var(--accent2);color:#fff}
 .btn.danger:hover{border-color:var(--red);color:var(--red)}
 .btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
@@ -54,7 +56,7 @@ input[type=date].in::-webkit-calendar-picker-indicator{filter:invert(.6);cursor:
 
 /* ---------- login ---------- */
 #login{min-height:100%;display:grid;grid-template-columns:1.1fr 1fr}
-.login-art{position:relative;overflow:hidden;background:radial-gradient(1200px 600px at 20% 10%,rgba(34,197,94,.18),transparent 60%),linear-gradient(160deg,#07100b,#0c1a12 60%,#06110a);display:flex;flex-direction:column;justify-content:flex-end;padding:56px;color:#e9f0eb}
+.login-art{position:relative;overflow:hidden;background:radial-gradient(1200px 600px at 20% 10%,rgba(225,29,46,.22),transparent 60%),linear-gradient(160deg,#0a0a0c,#1a070a 60%,#09090b);display:flex;flex-direction:column;justify-content:flex-end;padding:56px;color:#e9f0eb}
 .login-art .strip{position:absolute;left:-10%;right:-10%;height:120px;background:#020604;transform:rotate(-8deg);box-shadow:0 0 40px rgba(0,0,0,.6)}
 .login-art .strip::before,.login-art .strip::after{content:"";position:absolute;left:0;right:0;height:14px;background:repeating-linear-gradient(90deg,transparent 0 14px,rgba(233,240,235,.18) 14px 30px)}
 .login-art .strip::before{top:8px}.login-art .strip::after{bottom:8px}
@@ -65,7 +67,8 @@ input[type=date].in::-webkit-calendar-picker-indicator{filter:invert(.6);cursor:
 .login-box{display:flex;align-items:center;justify-content:center;padding:40px}
 .login-card{width:100%;max-width:380px}
 .brand{display:flex;align-items:center;gap:12px}
-.brand-logo{width:38px;height:38px;border-radius:10px;background:var(--soft);border:1px solid var(--glow);display:grid;place-items:center;color:var(--accent)}
+.brand-logo{width:40px;height:40px;border-radius:11px;background:radial-gradient(circle at 30% 25%,#2a0a0e,#0b0b0d);border:1.5px solid var(--accent);display:grid;place-items:center;color:var(--accent);box-shadow:0 0 18px var(--glow),inset 0 0 10px rgba(225,29,46,.25)}
+.brand-logo .z{font-family:Oswald,Impact,sans-serif;font-weight:700;font-size:26px;line-height:1;color:var(--accent);text-shadow:0 0 10px var(--glow);transform:skewX(-8deg)}
 .login-card h2{font-size:28px;margin:28px 0 6px}
 .login-card .sub{color:var(--muted);margin:0 0 26px}
 .err{color:var(--red);font-size:13px;min-height:18px;margin:-4px 0 10px}
@@ -79,16 +82,17 @@ header .title{font-size:22px;line-height:1}
 header .tag{font-size:10px;font-weight:700;letter-spacing:.12em;border:1px solid var(--amber);color:var(--amber);padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:4px}
 header .subt{font-size:11.5px;color:var(--muted);margin-top:3px}
 .nav{display:flex;gap:4px;margin-left:18px}
-.nav button{background:none;border:0;padding:8px 13px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+.nav button{background:none;border:0;padding:8px 13px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600;white-space:nowrap}
+@media (max-width:1300px){header .subt{display:none}}
 .nav button.on{background:var(--soft);color:var(--accent)}
 .nav button:hover{color:var(--text)}
 .spacer{flex:1}
-.saved{font-size:12px;font-weight:600;color:var(--accent);border:1px solid var(--glow);background:var(--soft);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.saved{font-size:12px;font-weight:600;color:var(--ok);border:1px solid var(--okGlow);background:var(--okSoft);padding:5px 11px;border-radius:999px;white-space:nowrap}
 .saved.busy{color:var(--amber);border-color:var(--amber);background:var(--amberSoft)}
 .saved.bad{color:var(--red);border-color:var(--red);background:var(--redSoft)}
 .theme{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
 .theme button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-weight:600;font-size:12.5px;color:var(--muted)}
-.theme button.on{background:var(--accent);color:#04140a}
+.theme button.on{background:var(--accent);color:#fff}
 .me{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 6px;border-radius:9px}
 .me:hover{background:var(--panel2)}
 .avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--panel3);border:1px solid var(--line2);flex-shrink:0}
@@ -103,7 +107,7 @@ main{padding:0 26px 40px;min-width:0}
 .rec{color:var(--red);font-size:11px;font-weight:700;letter-spacing:.1em;display:flex;align-items:center;gap:5px}
 .rec i{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1.4s infinite}
 @keyframes blink{50%{opacity:.2}}
-.now{border:1.5px solid var(--accent);border-radius:var(--radius);padding:14px 16px;background:linear-gradient(160deg,var(--soft),transparent 70%);box-shadow:0 0 0 4px rgba(34,197,94,.06),0 0 30px rgba(34,197,94,.08);cursor:pointer;position:relative}
+.now{border:1.5px solid var(--accent);border-radius:var(--radius);padding:14px 16px;background:linear-gradient(160deg,var(--soft),transparent 70%);box-shadow:0 0 0 4px rgba(225,29,46,.07),0 0 30px rgba(225,29,46,.1);cursor:pointer;position:relative}
 .now .k{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
 .now .k i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
 .now .t{font-size:21px;line-height:1.1;margin-top:8px}
@@ -133,7 +137,7 @@ main{padding:0 26px 40px;min-width:0}
 .tab .display{font-size:16px;color:var(--text);opacity:.75}
 .tab small{font-size:11.5px;color:var(--muted)}
 .tab .dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
-.tab .dot.ok{background:var(--accent)}.tab .dot.doing{background:var(--amber)}
+.tab .dot.ok{background:var(--ok)}.tab .dot.doing{background:var(--amber)}
 .tab.on{border-color:var(--accent);background:linear-gradient(0deg,var(--soft),transparent)}
 .tab.on .display{color:var(--accent);opacity:1}
 
@@ -146,12 +150,12 @@ main{padding:0 26px 40px;min-width:0}
 .perf.t{top:10px}.perf.b{bottom:10px}
 .poster{position:relative;z-index:2;width:150px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 40px rgba(0,0,0,.5);flex-shrink:0;background:var(--panel3)}
 .poster img{width:100%;height:100%;object-fit:cover;display:block}
-.poster .ph{width:100%;height:100%;display:grid;place-items:center;font-family:Oswald;font-size:40px;color:#fff;background:linear-gradient(150deg,#15803d,#052e16)}
+.poster .ph{width:100%;height:100%;display:grid;place-items:center;font-family:Oswald;font-size:40px;color:#fff;background:linear-gradient(150deg,#b91524,#1a0306)}
 .hero-info{position:relative;z-index:2;min-width:0;flex:1}
 .hero-info h1{font-size:46px;line-height:1;margin:8px 0 14px;word-break:break-word}
 .badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);background:color-mix(in srgb,var(--panel) 70%,transparent);color:var(--muted)}
-.badge.on{border-color:var(--glow);color:var(--accent);background:var(--soft)}
+.badge.on{border-color:var(--okGlow);color:var(--ok);background:var(--okSoft)}
 .badge.click{cursor:pointer}
 .badge.click:hover{border-color:var(--accent)}
 .hero-actions{position:absolute;top:22px;right:22px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -196,13 +200,13 @@ tr:last-child td{border-bottom:0}
 tr.mine td{background:linear-gradient(90deg,var(--soft),transparent 60%)}
 td.num{color:var(--muted);text-align:center;width:40px}
 .sbar{display:block;width:4px;height:28px;border-radius:3px;background:var(--dim)}
-.sbar.s-fazendo{background:var(--blue)}.sbar.s-concluido{background:var(--accent)}.sbar.s-pendente{background:var(--amber)}
+.sbar.s-fazendo{background:var(--blue)}.sbar.s-concluido{background:var(--ok)}.sbar.s-pendente{background:var(--amber)}
 .lang-cell{display:flex;align-items:center;gap:8px;font-weight:600;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--input);white-space:nowrap}
 td .in{padding:7px 10px;font-size:13px}
 .pill.in{font-weight:600}
 .s-pendente.pill{background-color:var(--graySoft)}
 .s-fazendo.pill{background-color:var(--blueSoft);color:#93b8ff;border-color:rgba(59,130,246,.45)}
-.s-concluido.pill,.r-revisado.pill{background-color:var(--soft);color:var(--accent);border-color:var(--glow)}
+.s-concluido.pill,.r-revisado.pill{background-color:var(--okSoft);color:var(--ok);border-color:var(--okGlow)}
 .r-revisando.pill,.u-media.pill{background-color:var(--amberSoft);color:var(--amber);border-color:rgba(245,158,11,.4)}
 .r-correcao.pill,.u-alta.pill{background-color:var(--redSoft);color:#ff8a8a;border-color:rgba(239,68,68,.45)}
 .u-baixa.pill{background-color:var(--graySoft);color:var(--muted)}
@@ -220,17 +224,43 @@ td .in{padding:7px 10px;font-size:13px}
 .role-tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--panel3);border:1px solid var(--line2);margin:2px 4px 2px 0}
 .role-tag.admin{color:var(--amber);border-color:rgba(245,158,11,.4)}
 .status-dot{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
-.status-dot i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.status-dot i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .status-dot.off i{background:var(--red)}
 .hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
 .hist{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s}
 .hist:hover{border-color:var(--accent);transform:translateY(-2px)}
 .hist .pimg{aspect-ratio:16/10;background-size:cover;background-position:center;position:relative}
-.hist .pimg .ph{width:100%;height:100%;display:grid;place-items:center;font-family:Oswald;font-size:34px;color:#fff;background:linear-gradient(150deg,#15803d,#052e16)}
-.hist .ok{position:absolute;top:10px;right:10px;background:var(--accent);color:#04140a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px}
+.hist .pimg .ph{width:100%;height:100%;display:grid;place-items:center;font-family:Oswald;font-size:34px;color:#fff;background:linear-gradient(150deg,#b91524,#1a0306)}
+.hist .ok{position:absolute;top:10px;right:10px;background:var(--ok);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px}
 .hist .b{padding:14px 16px}
 .hist .b .display{font-size:18px;line-height:1.15}
 .hist .b small{display:block;color:var(--muted);margin-top:6px;font-size:12px}
+
+/* ---------- financeiro ---------- */
+.subtabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.subtabs button{border:1px solid var(--line2);background:var(--panel);padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted)}
+.subtabs button.on{border-color:var(--accent);color:var(--accent);background:var(--soft)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi .label{font-size:10.5px}
+.kpi .v{font-family:Oswald,Impact,sans-serif;font-size:30px;line-height:1.1;margin-top:6px}
+.kpi small{color:var(--muted);font-size:12px}
+.kpi.red{border-color:var(--glow)}.kpi.red .v{color:var(--accent)}
+.kpi.good .v{color:var(--ok)}.kpi.bad .v{color:var(--accent)}
+.kpi .meter{height:6px;border-radius:9px;background:var(--panel3);margin-top:10px;overflow:hidden}
+.kpi .meter i{display:block;height:100%;background:var(--accent)}
+.fin-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.chart-card h4{margin:0 0 12px;font-size:16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.fin-row td{padding:6px 6px}
+.fin-row .in{padding:7px 9px;font-size:13px}
+.money{font-family:"JetBrains Mono",monospace;text-align:right}
+.cat-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px}
+.toolbar-fin{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.bar-click{cursor:pointer}
+@media (max-width:960px){.fin-grid{grid-template-columns:1fr}}
 
 /* ---------- modal ---------- */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:50px 16px;overflow:auto}
@@ -291,10 +321,17 @@ const OWNER_EMAIL = 'declanhygorp@gmail.com'; // sempre administrador
 
 /* ---------------- constantes ---------------- */
 const AREAS = [{id:'vocal',name:'Vocal'},{id:'efeitos',name:'Efeitos'},{id:'musica',name:'Música'}];
-const ROLES = {admin:'Administrador / sócio',vocal:'Editor de vocal',efeitos:'Editor de efeitos',musica:'Editor de música',material:'Editor de material',revisor:'Revisor'};
+const ROLES = {admin:'Administrador / sócio',gerente:'Gerente',vocal:'Editor de vocal',efeitos:'Editor de efeitos',musica:'Editor de música',material:'Editor de material',revisor:'Revisor'};
 const STATUS = {pendente:'Pendente',fazendo:'Fazendo',concluido:'Concluído'};
 const REVIEW = {pendente:'Pendente',revisando:'Revisando',correcao:'Correção',revisado:'Revisado'};
 const URG = {baixa:'Baixa',media:'Média',alta:'Alta'};
+const CATS = {revisao:['Revisão','#f59e0b'],vocal:['Vocal','#e11d2e'],efeitos:['Efeitos','#8b5cf6'],musica:['Música','#3b82f6'],gerente:['Gerente / bônus','#22c55e'],material:['Material','#14b8a6'],outros:['Outros','#9ca3af']};
+const brl = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const monthOf = ts => { const d=new Date(ts||Date.now()); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+const monthName = m => { if(!m) return '—'; const [y,mm]=m.split('-'); return ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][+mm-1]+'/'+y.slice(2); };
+const monthLong = m => { if(!m) return '—'; const [y,mm]=m.split('-'); return ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][+mm-1]+' de '+y; };
+const addMonths = (m,k) => { const [y,mm]=m.split('-').map(Number); const d=new Date(y,mm-1+k,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+const num = v => { let t=String(v??'').replace(/[R$\s]/g,''); if(t.includes(',')) t=t.replace(/\./g,'').replace(',','.'); const n=parseFloat(t); return isFinite(n)?n:0; };
 const LANGS = [['Inglês','us'],['Português (BR)','br'],['Português (PT)','pt'],['Espanhol','es'],['Espanhol (LatAm)','mx'],['Francês','fr'],['Alemão','de'],['Italiano','it'],['Russo','ru'],['Ucraniano','ua'],['Georgiano','ge'],['Uzbeque','uz'],['Cazaque','kz'],['Hindi','in'],['Tâmil','in'],['Telugu','in'],['Malaiala','in'],['Kannada/Canarês','in'],['Bengali','bd'],['Húngaro','hu'],['Japonês','jp'],['Coreano','kr'],['Chinês','cn'],['Polonês','pl'],['Tailandês','th'],['Tcheco','cz'],['Turco','tr'],['Árabe','sa'],['Indonésio','id'],['Vietnamita','vn'],['Holandês','nl'],['Romeno','ro'],['Grego','gr'],['Sueco','se'],['Hebraico','il'],['Persa','ir'],['Filipino','ph'],['Malaio','my']];
 
 /* ---------------- utilidades ---------------- */
@@ -358,6 +395,12 @@ function makeDemoApi(){
     resetUserPassword(u){ Object.assign(s.users.find(x=>x.uid===u.uid),{mustChangePassword:true}); save(); emitU(); return ok(); },
     updateUser(uid,p){ Object.assign(s.users.find(u=>u.uid===uid),p); save(); emitU(); emitMe(); return ok(); },
     deleteUser(uid){ s.users=s.users.filter(u=>u.uid!==uid); save(); emitU(); return ok(); },
+    watchFinance(cb){ L.fin=cb; cb(clone(s.finance||{})); return ()=>{L.fin=null}; },
+    saveFinance(fid,d){ s.finance=s.finance||{}; s.finance[fid]=d; save(); L.fin&&L.fin(clone(s.finance)); return ok(); },
+    watchFixed(cb){ L.fx=cb; cb(clone(s.fixed||[])); return ()=>{L.fx=null}; },
+    addFixed(d){ s.fixed=s.fixed||[]; s.fixed.push({id:uidGen(),...d}); save(); L.fx&&L.fx(clone(s.fixed)); return ok(); },
+    updateFixed(id,p){ Object.assign(s.fixed.find(x=>x.id===id),p); save(); L.fx&&L.fx(clone(s.fixed)); return ok(); },
+    deleteFixed(id){ s.fixed=s.fixed.filter(x=>x.id!==id); save(); L.fx&&L.fx(clone(s.fixed)); return ok(); },
     setFirstPassword(uid){ Object.assign(s.users.find(u=>u.uid===uid),{mustChangePassword:false}); save(); emitU(); emitMe(); return ok(); },
   };
 }
@@ -437,6 +480,12 @@ async function makeFirebaseApi(cfg){
     },
     updateUser:(uid,p)=>FS.updateDoc(FS.doc(db,'users',uid),p),
     async deleteUser(uid){ const u=users.find(x=>x.uid===uid); if(u&&u.username) await FS.deleteDoc(FS.doc(db,'usernames',u.username)); await FS.deleteDoc(FS.doc(db,'users',uid)); },
+    watchFinance:cb=>FS.onSnapshot(FS.collection(db,'finance'),q=>{ const m={}; q.forEach(d=>m[d.id]=d.data()); cb(m); }),
+    saveFinance:(fid,d)=>FS.setDoc(FS.doc(db,'finance',fid),d),
+    watchFixed:cb=>FS.onSnapshot(FS.collection(db,'fixedCosts'),q=>cb(list(q))),
+    addFixed:d=>FS.addDoc(FS.collection(db,'fixedCosts'),d),
+    updateFixed:(id,p)=>FS.updateDoc(FS.doc(db,'fixedCosts',id),p),
+    deleteFixed:id=>FS.deleteDoc(FS.doc(db,'fixedCosts',id)),
     async setFirstPassword(uid,pw){ await AU.updatePassword(auth.currentUser,pw); await FS.updateDoc(FS.doc(db,'users',uid),{mustChangePassword:false}); },
   };
 }
@@ -445,13 +494,15 @@ async function makeFirebaseApi(cfg){
    ESTADO
    ===================================================================== */
 let api, me=null, users=[], films=[], tasks=[], selId=null, view='prod', tab=null, onlyMine=false;
+let finance={}, fixed=[], finTab='film', finFilm=null, finMonth=monthOf();
 let unsubs=[], unsubTasks=null, tasksFor=null, theme=store.get('ee-theme','dark');
 document.documentElement.dataset.theme=theme;
 
 const roles = () => (me&&me.roles)||[];
 const isAdmin = () => !!me && (roles().includes('admin') || (me.email||'').toLowerCase()===OWNER_EMAIL);
 const has = r => roles().includes(r);
-const canMaterial = () => isAdmin() || has('material');
+const canManage = () => isAdmin() || has('gerente');
+const canMaterial = () => canManage() || has('material');
 const userName = uid => (users.find(u=>u.uid===uid)||{}).name || '—';
 const activeFilm = () => films.find(f=>f.status==='ativo');
 const queue = () => films.filter(f=>f.status==='fila').sort((a,b)=>(a.order||0)-(b.order||0));
@@ -547,7 +598,7 @@ function renderFirstPassword(p){
     try{ await api.setFirstPassword(p.uid,a); }catch(err){ $('#fperr').textContent=traduz(err); $('#fpb').disabled=false; }
   };
 }
-function clapIcon(){ return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4Z"/><path d="m4 11-.88-2.87a2 2 0 0 1 1.33-2.5l11.48-3.5a2 2 0 0 1 2.5 1.32l.87 2.87L4 11Z"/><path d="m6.6 4.99 3.38 4.2"/><path d="m11.86 3.38 3.38 4.2"/></svg>`; }
+function clapIcon(){ return `<span class="z">Z</span>`; }
 
 /* =====================================================================
    APP
@@ -555,6 +606,7 @@ function clapIcon(){ return `<svg width="20" height="20" viewBox="0 0 24 24" fil
 function startData(){
   unsubs.forEach(u=>u()); unsubs=[];
   unsubs.push(api.watchUsers(u=>{ users=u; render(); }));
+  if(isAdmin()){ unsubs.push(api.watchFinance(m=>{ finance=m; if(view==='finance') render(); })); unsubs.push(api.watchFixed(l=>{ fixed=l; if(view==='finance') render(); })); }
   let firstFilms=true;
   unsubs.push(api.watchFilms(f=>{ films=f;
     if(firstFilms){ firstFilms=false; if(!api.demo&&isAdmin()&&!f.length&&!store.get('ee-seeded-superbad',false)){ store.set('ee-seeded-superbad',true); api.createFilm({title:'Superbad',status:'ativo',order:1,createdAt:Date.now(),startedAt:Date.now(),poster:'',driveLink:'',links:[],material:{vocal:false,efeitos:false,musica:false}}); } } if(!selId||!films.some(x=>x.id===selId)) selId=(activeFilm()||queue()[0]||{}).id||null; render(); }));
@@ -572,18 +624,19 @@ function render(){
   if(!me) return;
   ensureTasks();
   if(!tab) tab=defaultTab();
-  if(view!=='prod' && !isAdmin()) view='prod';
+  if(view!=='prod' && !(isAdmin()||(view==='history'&&canManage()))) view='prod';
   $('#login').classList.add('hidden'); $('#boot').classList.add('hidden');
   const A=$('#app'); A.classList.remove('hidden');
   const scrollY=window.scrollY;
-  const roleTxt=isAdmin()?'Administrador':roles().map(r=>ROLES[r]).join(' · ')||'Sem cargo';
+  const roleTxt=isAdmin()?'Administrador':has('gerente')?'Gerente':roles().map(r=>ROLES[r]).join(' · ')||'Sem cargo';
   A.innerHTML=`
   <header class="top">
     <div class="brand"><div class="brand-logo">${clapIcon()}</div>
       <div><div class="title display">Estação de Editores</div><div class="subt">Vocal · Efeitos · Música — sincronizado em tempo real</div></div></div>
-    ${isAdmin()?`<nav class="nav">
+    ${canManage()?`<nav class="nav">
       <button class="${view==='prod'?'on':''}" data-act="view" data-id="prod">Produção</button>
-      <button class="${view==='team'?'on':''}" data-act="view" data-id="team">Equipe</button>
+      ${isAdmin()?`<button class="${view==='finance'?'on':''}" data-act="view" data-id="finance">Financeiro</button>
+      <button class="${view==='team'?'on':''}" data-act="view" data-id="team">Equipe</button>`:''}
       <button class="${view==='history'?'on':''}" data-act="view" data-id="history">Histórico</button></nav>`:''}
     <div class="spacer"></div>
     ${api.demo?`<span class="demo-flag" data-act="resetDemo" title="Clique para restaurar os dados de exemplo">MODO DEMO · restaurar</span>`:''}
@@ -594,7 +647,7 @@ function render(){
   </header>
   <div class="layout">
     <aside class="side">${sidebar()}</aside>
-    <main>${view==='team'?teamView():view==='history'?historyView():prodView()}</main>
+    <main>${view==='finance'?financeView():view==='team'?teamView():view==='history'?historyView():prodView()}</main>
   </div>`;
   window.scrollTo(0,scrollY);
 }
@@ -614,10 +667,10 @@ function sidebar(){
     <div class="q-item ${i===0?'next':''} ${selId===f.id&&view==='prod'?'sel':''}" data-act="selFilm" data-id="${f.id}">
       <div class="q-num mono">${String(i+2).padStart(2,'0')}</div>
       <div style="min-width:0"><div class="q-k">${i===0?'PRÓXIMO':'NA FILA'}</div><div class="q-t">🎬 ${esc(f.title)}</div></div>
-      ${isAdmin()?`<div class="q-arrows"><button data-act="moveUp" data-id="${f.id}" title="Subir">▲</button><button data-act="moveDown" data-id="${f.id}" title="Descer">▼</button></div>`:''}
+      ${canManage()?`<div class="q-arrows"><button data-act="moveUp" data-id="${f.id}" title="Subir">▲</button><button data-act="moveDown" data-id="${f.id}" title="Descer">▼</button></div>`:''}
     </div>`).join(''):`<div class="empty-side">A fila está vazia.</div>`}
   <div class="side-foot">
-    ${isAdmin()?`<button class="btn primary" style="justify-content:center" data-act="newFilm">+ Adicionar filme</button>
+    ${canManage()?`<button class="btn primary" style="justify-content:center" data-act="newFilm">+ Adicionar filme</button>
     <button class="btn" style="justify-content:center" data-act="view" data-id="history">Histórico de filmes concluídos</button>`:''}
   </div>`;
 }
@@ -632,8 +685,8 @@ function areaStats(list){
 }
 function prodView(){
   const f=selFilm();
-  if(!f) return `<div class="empty" style="margin-top:60px"><div class="display">Nenhum filme ainda</div>${isAdmin()?'Clique em “Adicionar filme” para começar a fila.':'Quando o administrador cadastrar um filme, ele aparece aqui.'}</div>`;
-  const ad=isAdmin();
+  if(!f) return `<div class="empty" style="margin-top:60px"><div class="display">Nenhum filme ainda</div>${canManage()?'Clique em “Adicionar filme” para começar a fila.':'Quando o administrador cadastrar um filme, ele aparece aqui.'}</div>`;
+  const ad=canManage();
   const all=areaStats(tasks);
   const tabs=AREAS.map(a=>{ const s=areaStats(tasks.filter(t=>t.area===a.id)); return `<button class="tab ${tab===a.id?'on':''}" data-act="tab" data-id="${a.id}"><span class="dot ${s.cls}"></span><span class="display">${a.name}</span><small>${s.label}</small></button>`; }).join('')
     +`<button class="tab ${tab==='resumo'?'on':''}" data-act="tab" data-id="resumo"><span class="dot ${all.cls}"></span><span class="display">Resumo</span><small>${all.total} idiomas</small></button>`;
@@ -656,7 +709,7 @@ function prodView(){
   <div class="tabs">${tabs}</div>
   <div class="card">
     <div class="hero">
-      <div class="hero-bg" style="${f.poster?`background-image:url('${esc(f.poster)}')`:'background:linear-gradient(120deg,#14532d,#052e16)'}"></div>
+      <div class="hero-bg" style="${f.poster?`background-image:url('${esc(f.poster)}')`:'background:linear-gradient(120deg,#7f1d1d,#140205)'}"></div>
       <div class="perf t"></div><div class="perf b"></div>
       <div class="poster">${posterHtml(f)}</div>
       <div class="hero-info">
@@ -683,7 +736,7 @@ function prodView(){
   ${tab==='resumo'?resumoView():areaView(f)}`;
 }
 function areaView(f){
-  const ad=isAdmin();
+  const ad=canManage();
   const area=AREAS.find(a=>a.id===tab);
   let list=tasks.filter(t=>t.area===tab);
   if(onlyMine) list=list.filter(t=>t.editorUid===me.uid||t.reviewerUid===me.uid);
@@ -702,7 +755,7 @@ function areaView(f){
   :`<div class="card"><div class="empty"><div class="display">Nada por aqui</div>${onlyMine?'Você não tem idiomas nesta área.':ad?'Use “Atribuir idiomas” para distribuir o trabalho.':'Nenhum idioma atribuído nesta área ainda.'}</div></div>`}`;
 }
 function groupHtml(uid,list){
-  const s=areaStats(list), ad=isAdmin();
+  const s=areaStats(list), ad=canManage();
   return `<div class="group">
     <div class="group-h"><div class="avatar">${esc(initials(userName(uid)))}</div><span class="nm">${esc(userName(uid))}${uid===me.uid?' <small style="color:var(--accent);font-weight:600">(você)</small>':''}</span>
       <span class="pill-c mono">${list.length} ${list.length===1?'idioma':'idiomas'}</span>
@@ -714,7 +767,7 @@ function selectHtml(field,opts,val,enabled,prefix,tid){
   return `<select class="in pill ${prefix}${esc(val)}" data-t="${tid}" data-f="${field}" ${enabled?'':'disabled'}>${Object.entries(opts).map(([k,v])=>`<option value="${k}" ${k===val?'selected':''}>${v}</option>`).join('')}</select>`;
 }
 function rowHtml(t,i){
-  const ad=isAdmin(), closed=selFilm()?.status==='concluido'&&!ad;
+  const ad=canManage(), closed=selFilm()?.status==='concluido'&&!ad;
   const ed=!closed&&(ad||t.editorUid===me.uid), rv=!closed&&(ad||t.reviewerUid===me.uid);
   const reviewers=users.filter(u=>u.active!==false&&(u.roles||[]).includes('revisor'));
   return `<tr class="${t.editorUid===me.uid||t.reviewerUid===me.uid?'mine':''}">
@@ -739,6 +792,138 @@ function resumoView(){
   <td><span class="in pill r-${t.reviewStatus}" style="display:inline-block;width:auto">${REVIEW[t.reviewStatus]||'—'}</span></td><td><span class="in pill s-${t.status}" style="display:inline-block;width:auto">${STATUS[t.status]||'—'}</span></td><td class="mono">${fmtD(t.start)}</td><td class="mono">${fmtD(t.delivery)}</td></tr>`).join('')}
   </tbody></table></div>`:`<div class="empty"><div class="display">Sem tarefas</div>Nenhum idioma atribuído neste filme.</div>`}</div>`;
 }
+
+/* ---------------- financeiro ---------------- */
+const finDoc = fid => finance[fid] || {items:[]};
+const filmMonth = f => (finance[f.id]&&finance[f.id].month) || monthOf(f.startedAt||f.createdAt);
+function filmTotals(fid){
+  const t={planned:0,actual:0,paid:0,byCat:{}};
+  Object.keys(CATS).forEach(c=>t.byCat[c]={planned:0,actual:0});
+  (finDoc(fid).items||[]).forEach(i=>{ const c=t.byCat[i.cat]||t.byCat.outros; c.planned+=num(i.planned); c.actual+=num(i.actual); t.planned+=num(i.planned); t.actual+=num(i.actual); if(i.paid) t.paid+=num(i.actual); });
+  const b=num(finDoc(fid).budget); t.budget=b||t.planned;
+  return t;
+}
+const fixedFor = m => fixed.filter(x=>(x.from||'0000-00')<=m && (!x.to||x.to>=m));
+function monthTotals(m){
+  const fl=films.filter(f=>filmMonth(f)===m);
+  const filmsSum=fl.reduce((a,f)=>a+filmTotals(f.id).actual,0);
+  const plannedSum=fl.reduce((a,f)=>a+filmTotals(f.id).budget,0);
+  const fixSum=fixedFor(m).reduce((a,x)=>a+num(x.amount),0);
+  return {films:fl,filmsSum,plannedSum,fixSum,total:filmsSum+fixSum};
+}
+function financeView(){
+  return `<div class="page-h"><div><h2 class="display">Financeiro</h2><p>Só administradores e sócios veem esta aba. Coloque quanto cada filme pode custar e quanto realmente custou.</p></div></div>
+  <div class="subtabs">
+    <button class="${finTab==='film'?'on':''}" data-act="finTab" data-id="film">🎬 Por filme</button>
+    <button class="${finTab==='month'?'on':''}" data-act="finTab" data-id="month">📅 Por mês</button>
+    <button class="${finTab==='fixed'?'on':''}" data-act="finTab" data-id="fixed">📌 Custos fixos mensais</button>
+  </div>
+  ${finTab==='month'?finMonthView():finTab==='fixed'?finFixedView():finFilmView()}`;
+}
+function barChart(groups,series,{h=220,onClick}={}){
+  // groups: [{label, values:[...], key}], series: [{name,color,stack?}]
+  const W=Math.max(320,groups.length*70), pad=44, max=Math.max(1,...groups.map(g=>series.some(x=>x.stack)?g.values.reduce((a,b)=>a+b,0):Math.max(...g.values)));
+  const nice=Math.pow(10,Math.floor(Math.log10(max))); const top=Math.ceil(max/nice)*nice;
+  const gw=(W-pad-10)/groups.length, stacked=series.some(x=>x.stack);
+  let out=`<svg viewBox="0 0 ${W} ${h+30}" width="100%" style="max-height:${h+40}px" role="img">`;
+  for(let i=0;i<=4;i++){ const y=10+(h-10)*(1-i/4); out+=`<line x1="${pad}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="${i?'3 4':''}"/><text x="${pad-6}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--dim)">${(top*i/4/1000>=1)?(top*i/4/1000).toFixed(top>=10000?0:1)+'k':Math.round(top*i/4)}</text>`; }
+  groups.forEach((g,gi)=>{
+    const x0=pad+gi*gw+gw*.15, bw=stacked?gw*.7:(gw*.7)/series.length;
+    let acc=0;
+    g.values.forEach((v,si)=>{ const bh=(h-10)*(v/top); const x=stacked?x0:x0+si*bw; const y=stacked?10+(h-10)-((h-10)*(acc+v)/top):10+(h-10)-bh; acc+=v;
+      out+=`<rect x="${x}" y="${y}" width="${Math.max(2,bw-2)}" height="${Math.max(0,bh)}" rx="3" fill="${series[si].color}" ${series[si].faded?'opacity=".35"':''} ${onClick?`class="bar-click" data-act="${onClick}" data-id="${g.key}"`:''}><title>${esc(g.label)} · ${series[si].name}: ${brl(v)}</title></rect>`; });
+    out+=`<text x="${pad+gi*gw+gw/2}" y="${h+18}" text-anchor="middle" font-size="11" fill="${g.sel?'var(--accent)':'var(--muted)'}" font-weight="${g.sel?700:400}">${esc(g.label)}</text>`;
+  });
+  return out+`</svg><div class="legend">${series.map(x=>`<span><i style="background:${x.color};${x.faded?'opacity:.35':''}"></i>${x.name}</span>`).join('')}</div>`;
+}
+function finFilmView(){
+  const all=[...films].sort((a,b)=>(b.startedAt||b.createdAt||0)-(a.startedAt||a.createdAt||0));
+  if(!all.length) return `<div class="card"><div class="empty"><div class="display">Nenhum filme</div>Cadastre um filme na Produção primeiro.</div></div>`;
+  if(!finFilm||!films.some(f=>f.id===finFilm)) finFilm=(activeFilm()||all[0]).id;
+  const f=films.find(x=>x.id===finFilm), d=finDoc(f.id), t=filmTotals(f.id);
+  const saldo=t.budget-t.actual, pct=t.budget?Math.min(100,Math.round(t.actual/t.budget*100)):0;
+  const people=users.filter(u=>u.active!==false).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const items=d.items||[];
+  return `<div class="toolbar-fin">
+    <label class="field" style="margin:0;min-width:280px"><span>Filme</span><select class="in" data-finsel="film">${all.map(x=>`<option value="${x.id}" ${x.id===f.id?'selected':''}>${esc(x.title)} ${x.status==='concluido'?'(concluído)':x.status==='ativo'?'(editando)':'(na fila)'}</option>`).join('')}</select></label>
+    <label class="field" style="margin:0"><span>Mês em que entra no financeiro</span><input type="month" class="in" data-finsel="filmMonth" value="${filmMonth(f)}"></label>
+    <label class="field" style="margin:0"><span>Quanto pode custar (orçamento total)</span><input class="in money" style="width:180px" data-finsel="budget" placeholder="soma do previsto" value="${d.budget?num(d.budget):''}"></label>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="label">Pode custar</div><div class="v">${brl(t.budget)}</div><small>${d.budget?'orçamento definido por você':'soma dos valores previstos'}</small></div>
+    <div class="kpi red"><div class="label">Está custando</div><div class="v">${brl(t.actual)}</div><div class="meter"><i style="width:${pct}%"></i></div><small>${pct}% do orçamento</small></div>
+    <div class="kpi ${saldo>=0?'good':'bad'}"><div class="label">${saldo>=0?'Ainda sobra':'Passou do orçamento'}</div><div class="v">${brl(Math.abs(saldo))}</div></div>
+    <div class="kpi"><div class="label">Já pago</div><div class="v">${brl(t.paid)}</div><small>falta pagar ${brl(t.actual-t.paid)}</small></div>
+  </div>
+  <div class="fin-grid">
+    <div class="chart-card"><h4 class="display">Previsto × gasto por área</h4>
+      ${barChart(Object.keys(CATS).filter(c=>t.byCat[c].planned||t.byCat[c].actual).map(c=>({label:CATS[c][0].split(' ')[0],values:[t.byCat[c].planned,t.byCat[c].actual]})).concat([]).length?Object.keys(CATS).filter(c=>t.byCat[c].planned||t.byCat[c].actual).map(c=>({label:CATS[c][0].split(' ')[0],values:[t.byCat[c].planned,t.byCat[c].actual]})):[{label:'—',values:[0,0]}],[{name:'Previsto',color:'var(--muted)',faded:true},{name:'Gasto',color:'var(--accent)'}])}
+    </div>
+    <div class="chart-card"><h4 class="display">Para onde vai o dinheiro</h4>
+      ${t.actual?Object.keys(CATS).filter(c=>t.byCat[c].actual).sort((a,b)=>t.byCat[b].actual-t.byCat[a].actual).map(c=>{ const v=t.byCat[c].actual, w=Math.round(v/t.actual*100); return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><span><i class="cat-dot" style="background:${CATS[c][1]}"></i>${CATS[c][0]}</span><span class="mono">${brl(v)} · ${w}%</span></div><div class="meter" style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${CATS[c][1]}"></i></div></div>`; }).join(''):'<div style="color:var(--dim);font-size:13px">Ainda não há gastos lançados neste filme.</div>'}
+    </div>
+  </div>
+  <div class="toolbar"><h3 class="display">Custos do filme</h3><div class="spacer"></div>
+    ${items.length?'':`<button class="btn" data-act="finDefaults">Criar linhas padrão (Revisão, Vocal, Efeitos, Música, Gerente)</button>`}
+    <button class="btn primary" data-act="finAdd">+ Adicionar custo</button></div>
+  <div class="card"><div class="tbl-wrap"><table style="min-width:900px"><thead><tr><th>Área</th><th>Pessoa</th><th>Descrição</th><th style="text-align:right">Previsto</th><th style="text-align:right">Gasto</th><th>Pago</th><th></th></tr></thead><tbody>
+    ${items.map(i=>`<tr class="fin-row">
+      <td><select class="in" data-fin="${i.id}" data-k="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===i.cat?'selected':''}>${v[0]}</option>`).join('')}</select></td>
+      <td><select class="in" data-fin="${i.id}" data-k="uid"><option value="">—</option>${people.map(u=>`<option value="${u.uid}" ${u.uid===i.uid?'selected':''}>${esc(u.name)}</option>`).join('')}${i.uid&&!people.some(u=>u.uid===i.uid)?`<option value="${i.uid}" selected>${esc(userName(i.uid))}</option>`:''}</select></td>
+      <td><input class="in" data-fin="${i.id}" data-k="desc" value="${esc(i.desc||'')}" placeholder="ex.: Japonês 5.1, bônus prazo…"></td>
+      <td><input class="in money" style="width:120px" data-fin="${i.id}" data-k="planned" value="${i.planned?num(i.planned):''}" placeholder="0,00"></td>
+      <td><input class="in money" style="width:120px" data-fin="${i.id}" data-k="actual" value="${i.actual?num(i.actual):''}" placeholder="0,00"></td>
+      <td style="text-align:center"><input type="checkbox" data-fin="${i.id}" data-k="paid" ${i.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)"></td>
+      <td><button class="icon-btn del" data-act="finDel" data-id="${i.id}">✕</button></td></tr>`).join('')||`<tr><td colspan="7"><div class="empty" style="padding:30px">Nenhum custo lançado. Use os botões acima.</div></td></tr>`}
+    ${items.length?`<tr><td colspan="3" style="text-align:right;font-weight:700">TOTAL</td><td class="money" style="font-weight:700">${brl(t.planned)}</td><td class="money" style="font-weight:700;color:var(--accent)">${brl(t.actual)}</td><td colspan="2"></td></tr>`:''}
+  </tbody></table></div><div class="foot-note">Digite os valores e clique fora do campo — salva sozinho. Use vírgula ou ponto para centavos.</div></div>`;
+}
+function finMonthView(){
+  const m=finMonth, mt=monthTotals(m);
+  const months=[...Array(12)].map((_,i)=>addMonths(m,i-11));
+  const groups=months.map(x=>{ const t=monthTotals(x); return {label:monthName(x),values:[t.filmsSum,t.fixSum],key:x,sel:x===m}; });
+  const byCat={}; Object.keys(CATS).forEach(c=>byCat[c]=0); mt.films.forEach(f=>{ const t=filmTotals(f.id); Object.keys(CATS).forEach(c=>byCat[c]+=t.byCat[c].actual); });
+  return `<div class="toolbar-fin">
+    <button class="btn" data-act="finPrevMonth">◀</button>
+    <input type="month" class="in" style="width:auto" data-finsel="month" value="${m}">
+    <button class="btn" data-act="finNextMonth">▶</button>
+    <span class="display" style="font-size:22px;margin-left:6px">${monthLong(m)}</span></div>
+  <div class="kpis">
+    <div class="kpi red"><div class="label">Total gasto no mês</div><div class="v">${brl(mt.total)}</div><small>filmes + custos fixos</small></div>
+    <div class="kpi"><div class="label">Gasto com filmes</div><div class="v">${brl(mt.filmsSum)}</div><small>${mt.films.length} filme(s) · previsto ${brl(mt.plannedSum)}</small></div>
+    <div class="kpi"><div class="label">Custos fixos</div><div class="v">${brl(mt.fixSum)}</div><small>${fixedFor(m).length} item(ns)</small></div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px"><h4 class="display">Últimos 12 meses</h4>
+    ${barChart(groups,[{name:'Filmes',color:'var(--accent)',stack:true},{name:'Custos fixos',color:'#6b7280',stack:true}],{onClick:'finPickMonth'})}
+    <div style="font-size:12px;color:var(--dim);margin-top:6px">Clique numa barra para abrir o mês.</div></div>
+  <div class="fin-grid">
+    <div class="card"><div class="sec-h" style="padding:16px 18px 0"><span class="label">Filmes do mês</span></div><div class="tbl-wrap"><table style="min-width:420px"><thead><tr><th>Filme</th><th style="text-align:right">Pode custar</th><th style="text-align:right">Gasto</th></tr></thead><tbody>
+      ${mt.films.map(f=>{ const t=filmTotals(f.id); return `<tr style="cursor:pointer" data-act="finOpenFilm" data-id="${f.id}"><td><b>${esc(f.title)}</b></td><td class="money">${brl(t.budget)}</td><td class="money" style="color:${t.actual>t.budget&&t.budget?'var(--accent)':'inherit'}">${brl(t.actual)}</td></tr>`; }).join('')||'<tr><td colspan="3" style="color:var(--dim)">Nenhum filme neste mês.</td></tr>'}
+    </tbody></table></div></div>
+    <div class="card"><div class="sec-h" style="padding:16px 18px 0"><span class="label">Por área + fixos</span></div><div class="tbl-wrap"><table style="min-width:360px"><tbody>
+      ${Object.keys(CATS).filter(c=>byCat[c]).map(c=>`<tr><td><i class="cat-dot" style="background:${CATS[c][1]}"></i>${CATS[c][0]}</td><td class="money">${brl(byCat[c])}</td></tr>`).join('')}
+      ${fixedFor(m).map(x=>`<tr><td><i class="cat-dot" style="background:#6b7280"></i>${esc(x.name)} <small style="color:var(--dim)">(fixo)</small></td><td class="money">${brl(x.amount)}</td></tr>`).join('')}
+      <tr><td style="font-weight:700">TOTAL</td><td class="money" style="font-weight:700;color:var(--accent)">${brl(mt.total)}</td></tr>
+    </tbody></table></div></div>
+  </div>`;
+}
+function finFixedView(){
+  const people=users.filter(u=>u.active!==false);
+  const list=[...fixed].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const now=monthOf(), cur=fixedFor(now).reduce((a,x)=>a+num(x.amount),0);
+  return `<div class="kpis"><div class="kpi red"><div class="label">Fixos neste mês (${monthName(now)})</div><div class="v">${brl(cur)}</div><small>entram todo mês no financeiro</small></div></div>
+  <div class="toolbar"><h3 class="display">Custos fixos mensais</h3><div class="spacer"></div><button class="btn primary" data-act="fixAdd">+ Adicionar custo fixo</button></div>
+  <div class="card"><div class="tbl-wrap"><table style="min-width:820px"><thead><tr><th>Nome</th><th>Pessoa</th><th style="text-align:right">Valor por mês</th><th>Desde</th><th>Até (opcional)</th><th></th></tr></thead><tbody>
+    ${list.map(x=>`<tr class="fin-row">
+      <td><input class="in" data-fx="${x.id}" data-k="name" value="${esc(x.name||'')}" placeholder="ex.: Meu salário, Salário gerente"></td>
+      <td><select class="in" data-fx="${x.id}" data-k="uid"><option value="">—</option>${people.map(u=>`<option value="${u.uid}" ${u.uid===x.uid?'selected':''}>${esc(u.name)}</option>`).join('')}</select></td>
+      <td><input class="in money" style="width:130px" data-fx="${x.id}" data-k="amount" value="${x.amount?num(x.amount):''}" placeholder="0,00"></td>
+      <td><input type="month" class="in" data-fx="${x.id}" data-k="from" value="${x.from||''}"></td>
+      <td><input type="month" class="in" data-fx="${x.id}" data-k="to" value="${x.to||''}"></td>
+      <td><button class="icon-btn del" data-act="fixDel" data-id="${x.id}">✕</button></td></tr>`).join('')||`<tr><td colspan="6"><div class="empty" style="padding:30px">Nenhum custo fixo. Ex.: seu salário de R$ 2.000 ou o salário fixo do gerente.</div></td></tr>`}
+  </tbody></table></div><div class="foot-note">O bônus do gerente por filme é lançado dentro do filme, na área “Gerente / bônus”.</div></div>`;
+}
+function saveFin(fid,d){ run(api.saveFinance(fid,{...d,updatedAt:Date.now()})); }
 
 /* ---------------- equipe ---------------- */
 function teamView(){
@@ -812,6 +997,16 @@ const ACT={
   editUser(id){ userModal(users.find(u=>u.uid===id)); },
   async delUser(id){ const u=users.find(x=>x.uid===id); if(!await confirmBox('Remover funcionário?',`<b>${esc(u.name)}</b> perde o acesso ao site. As tarefas antigas continuam no histórico com o nome dele.`,'Remover',true)) return; run(api.deleteUser(id),'Funcionário removido.'); },
   account(){ accountModal(); },
+  finTab(id){ finTab=id; render(); },
+  finPrevMonth(){ finMonth=addMonths(finMonth,-1); render(); },
+  finNextMonth(){ finMonth=addMonths(finMonth,1); render(); },
+  finPickMonth(id){ finMonth=id; render(); },
+  finOpenFilm(id){ finFilm=id; finTab='film'; render(); },
+  finAdd(){ const d=finDoc(finFilm); saveFin(finFilm,{...d,items:[...(d.items||[]),{id:uidGen(),cat:'vocal',uid:'',desc:'',planned:0,actual:0,paid:false}]}); },
+  finDefaults(){ const d=finDoc(finFilm); saveFin(finFilm,{...d,items:['revisao','vocal','efeitos','musica','gerente'].map(c=>({id:uidGen(),cat:c,uid:'',desc:'',planned:0,actual:0,paid:false}))}); },
+  async finDel(id){ if(!await confirmBox('Remover custo?','Essa linha de custo será apagada.','Remover',true)) return; const d=finDoc(finFilm); saveFin(finFilm,{...d,items:(d.items||[]).filter(i=>i.id!==id)}); },
+  fixAdd(){ run(api.addFixed({name:'',uid:'',amount:0,from:monthOf(),to:'',createdAt:Date.now()})); },
+  async fixDel(id){ if(!await confirmBox('Remover custo fixo?','Ele deixa de contar em todos os meses.','Remover',true)) return; run(api.deleteFixed(id)); },
   resetUserPw(id){ resetPwModal(users.find(x=>x.uid===id)); },
 };
 function moveQueue(id,dir){
@@ -827,7 +1022,23 @@ document.addEventListener('click',e=>{
 },true);
 document.addEventListener('input',e=>{ if(e.target.id==='hsearch'){ const v=e.target.value.toLowerCase(); document.querySelectorAll('#hgrid .hist').forEach(c=>c.style.display=c.dataset.title.includes(v)?'':'none'); } });
 document.addEventListener('change',e=>{
-  const el=e.target; if(!el.dataset||!el.dataset.t||!el.dataset.f) return;
+  const el=e.target;
+  if(el.dataset&&el.dataset.finsel){
+    const k=el.dataset.finsel;
+    if(k==='film'){ finFilm=el.value; render(); return; }
+    if(k==='month'){ if(el.value){ finMonth=el.value; render(); } return; }
+    const d=finDoc(finFilm);
+    if(k==='filmMonth'&&el.value) saveFin(finFilm,{...d,items:d.items||[],month:el.value});
+    if(k==='budget') saveFin(finFilm,{...d,items:d.items||[],budget:num(el.value)});
+    return;
+  }
+  if(el.dataset&&el.dataset.fin){
+    const d=finDoc(finFilm), k=el.dataset.k, v=k==='paid'?el.checked:(k==='planned'||k==='actual')?num(el.value):el.value;
+    saveFin(finFilm,{...d,items:(d.items||[]).map(i=>i.id===el.dataset.fin?{...i,[k]:v}:i)}); return;
+  }
+  if(el.dataset&&el.dataset.fx){
+    const k=el.dataset.k; run(api.updateFixed(el.dataset.fx,{[k]:k==='amount'?num(el.value):el.value})); return;
+  } if(!el.dataset||!el.dataset.t||!el.dataset.f) return;
   const t=tasks.find(x=>x.id===el.dataset.t); if(!t) return;
   const f=el.dataset.f, v=el.value.trim();
   const p={[f]:v,updatedAt:Date.now(),updatedBy:me.uid};
