@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estação de Editores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e0c;--panel:#101513;--panel2:#141a17;--panel3:#1a211d;--line:#222a26;--line2:#2c3631;
+  --text:#e9f0eb;--muted:#869489;--dim:#5d6a62;--input:#0c110f;
+  --accent:#22c55e;--accent2:#16a34a;--soft:rgba(34,197,94,.12);--glow:rgba(34,197,94,.35);
+  --blue:#3b82f6;--blueSoft:rgba(59,130,246,.16);--amber:#f59e0b;--amberSoft:rgba(245,158,11,.15);
+  --red:#ef4444;--redSoft:rgba(239,68,68,.15);--graySoft:rgba(148,163,184,.10);
+  --radius:12px;--shadow:0 10px 30px rgba(0,0,0,.35);
+}
+[data-theme=light]{
+  --bg:#eef3f0;--panel:#ffffff;--panel2:#f6f9f7;--panel3:#edf2ef;--line:#dde5e0;--line2:#cfd9d3;
+  --text:#14211a;--muted:#5b6a61;--dim:#8a978f;--input:#ffffff;--soft:rgba(22,163,74,.10);--glow:rgba(22,163,74,.25);
+  --shadow:0 8px 24px rgba(20,40,30,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.display{font-family:Oswald,Impact,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+.mono{font-family:"JetBrains Mono",Consolas,monospace}
+.label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hidden{display:none!important}
+
+/* ---------- buttons & inputs ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--panel2);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13px;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#04140a}
+.btn.primary:hover{background:var(--accent2);color:#fff}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.icon-btn{border:1px solid transparent;background:transparent;cursor:pointer;color:var(--muted);border-radius:7px;width:28px;height:28px;display:inline-grid;place-items:center}
+.icon-btn:hover{color:var(--text);background:var(--panel3)}
+.icon-btn.del:hover{color:var(--red)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field>span{font-size:12px;font-weight:600;color:var(--muted)}
+.in{width:100%;background:var(--input);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;outline:none;transition:.15s}
+.in:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+.in:disabled{opacity:.75;cursor:default}
+select.in{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px;cursor:pointer}
+select.in:disabled{background-image:none;cursor:default}
+input[type=date].in::-webkit-calendar-picker-indicator{filter:invert(.6);cursor:pointer}
+[data-theme=light] input[type=date].in::-webkit-calendar-picker-indicator{filter:none}
+
+/* ---------- login ---------- */
+#login{min-height:100%;display:grid;grid-template-columns:1.1fr 1fr}
+.login-art{position:relative;overflow:hidden;background:radial-gradient(1200px 600px at 20% 10%,rgba(34,197,94,.18),transparent 60%),linear-gradient(160deg,#07100b,#0c1a12 60%,#06110a);display:flex;flex-direction:column;justify-content:flex-end;padding:56px;color:#e9f0eb}
+.login-art .strip{position:absolute;left:-10%;right:-10%;height:120px;background:#020604;transform:rotate(-8deg);box-shadow:0 0 40px rgba(0,0,0,.6)}
+.login-art .strip::before,.login-art .strip::after{content:"";position:absolute;left:0;right:0;height:14px;background:repeating-linear-gradient(90deg,transparent 0 14px,rgba(233,240,235,.18) 14px 30px)}
+.login-art .strip::before{top:8px}.login-art .strip::after{bottom:8px}
+.login-art .s1{top:16%}.login-art .s2{top:44%;transform:rotate(5deg);opacity:.7}
+.login-art h1{font-size:64px;line-height:.95;margin:0 0 14px;position:relative}
+.login-art h1 b{color:var(--accent)}
+.login-art p{max-width:430px;color:#a8b6ad;position:relative;margin:0}
+.login-box{display:flex;align-items:center;justify-content:center;padding:40px}
+.login-card{width:100%;max-width:380px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:38px;height:38px;border-radius:10px;background:var(--soft);border:1px solid var(--glow);display:grid;place-items:center;color:var(--accent)}
+.login-card h2{font-size:28px;margin:28px 0 6px}
+.login-card .sub{color:var(--muted);margin:0 0 26px}
+.err{color:var(--red);font-size:13px;min-height:18px;margin:-4px 0 10px}
+.demo-box{margin-top:26px;border:1px dashed var(--line2);border-radius:12px;padding:14px}
+.demo-users{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+
+/* ---------- shell ---------- */
+#app{min-height:100%;display:flex;flex-direction:column}
+header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;padding:12px 22px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header .title{font-size:22px;line-height:1}
+header .tag{font-size:10px;font-weight:700;letter-spacing:.12em;border:1px solid var(--amber);color:var(--amber);padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:4px}
+header .subt{font-size:11.5px;color:var(--muted);margin-top:3px}
+.nav{display:flex;gap:4px;margin-left:18px}
+.nav button{background:none;border:0;padding:8px 13px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+.nav button.on{background:var(--soft);color:var(--accent)}
+.nav button:hover{color:var(--text)}
+.spacer{flex:1}
+.saved{font-size:12px;font-weight:600;color:var(--accent);border:1px solid var(--glow);background:var(--soft);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.saved.busy{color:var(--amber);border-color:var(--amber);background:var(--amberSoft)}
+.saved.bad{color:var(--red);border-color:var(--red);background:var(--redSoft)}
+.theme{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.theme button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-weight:600;font-size:12.5px;color:var(--muted)}
+.theme button.on{background:var(--accent);color:#04140a}
+.me{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 6px;border-radius:9px}
+.me:hover{background:var(--panel2)}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--panel3);border:1px solid var(--line2);flex-shrink:0}
+.me .nm{font-weight:600;font-size:13px;line-height:1.1}
+.me .rl{font-size:11px;color:var(--muted)}
+.layout{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0}
+aside.side{border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:10px;position:sticky;top:61px;height:calc(100vh - 61px);overflow:auto}
+main{padding:0 26px 40px;min-width:0}
+
+/* ---------- sidebar ---------- */
+.side-h{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
+.rec{color:var(--red);font-size:11px;font-weight:700;letter-spacing:.1em;display:flex;align-items:center;gap:5px}
+.rec i{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.2}}
+.now{border:1.5px solid var(--accent);border-radius:var(--radius);padding:14px 16px;background:linear-gradient(160deg,var(--soft),transparent 70%);box-shadow:0 0 0 4px rgba(34,197,94,.06),0 0 30px rgba(34,197,94,.08);cursor:pointer;position:relative}
+.now .k{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
+.now .k i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.now .t{font-size:21px;line-height:1.1;margin-top:8px}
+.now.sel{outline:2px solid var(--accent);outline-offset:2px}
+.eq{position:absolute;right:14px;top:14px;display:flex;gap:2px;align-items:flex-end;height:12px}
+.eq b{width:3px;background:var(--accent);animation:eq 1s infinite ease-in-out}
+.eq b:nth-child(2){animation-delay:.2s}.eq b:nth-child(3){animation-delay:.4s}
+@keyframes eq{0%,100%{height:4px}50%{height:12px}}
+.q-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;transition:.15s}
+.q-item:hover{border-color:var(--line2);background:var(--panel2)}
+.q-item.sel{border-color:var(--accent)}
+.q-item.next{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.q-num{width:34px;height:34px;border-radius:8px;border:1px solid var(--line2);display:grid;place-items:center;font-size:12px;color:var(--muted);flex-shrink:0}
+.q-item.next .q-num{border-color:var(--accent);color:var(--accent)}
+.q-k{font-size:10px;font-weight:700;letter-spacing:.13em;color:var(--dim)}
+.q-t{font-weight:600;font-size:13.5px;line-height:1.25}
+.q-arrows{margin-left:auto;display:flex;flex-direction:column;opacity:0;transition:.15s}
+.q-item:hover .q-arrows{opacity:1}
+.q-arrows button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:10px;padding:1px 4px}
+.q-arrows button:hover{color:var(--accent)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.empty-side{color:var(--dim);font-size:13px;padding:10px 4px}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 -26px 22px;padding:0 26px;position:sticky;top:61px;background:var(--bg);z-index:10}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:16px 18px 13px;cursor:pointer;display:flex;align-items:center;gap:9px;color:var(--muted)}
+.tab .display{font-size:16px;color:var(--text);opacity:.75}
+.tab small{font-size:11.5px;color:var(--muted)}
+.tab .dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.tab .dot.ok{background:var(--accent)}.tab .dot.doing{background:var(--amber)}
+.tab.on{border-color:var(--accent);background:linear-gradient(0deg,var(--soft),transparent)}
+.tab.on .display{color:var(--accent);opacity:1}
+
+/* ---------- hero ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.hero{position:relative;padding:34px 28px;display:flex;gap:28px;align-items:center;min-height:250px;overflow:hidden}
+.hero-bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(38px) saturate(1.3);opacity:.45;transform:scale(1.1)}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--panel) 5%,color-mix(in srgb,var(--panel) 55%,transparent) 55%,color-mix(in srgb,var(--panel) 20%,transparent));pointer-events:none}
+.perf{position:absolute;left:14px;right:14px;height:6px;z-index:2;background:repeating-linear-gradient(90deg,var(--line2) 0 12px,transparent 12px 22px);opacity:.8}
+.perf.t{top:10px}.perf.b{bottom:10px}
+.poster{position:relative;z-index:2;width:150px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 40px rgba(0,0,0,.5);flex-shrink:0;background:var(--panel3)}
+.poster img{width:100%;height:100%;object-fit:cover;display:block}
+.poster .ph{width:100%;height:100%;display:grid;place-items:center;font-family:Oswald;font-size:40px;color:#fff;background:linear-gradient(150deg,#15803d,#052e16)}
+.hero-info{position:relative;z-index:2;min-width:0;flex:1}
+.hero-info h1{font-size:46px;line-height:1;margin:8px 0 14px;word-break:break-word}
+.badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);background:color-mix(in srgb,var(--panel) 70%,transparent);color:var(--muted)}
+.badge.on{border-color:var(--glow);color:var(--accent);background:var(--soft)}
+.badge.click{cursor:pointer}
+.badge.click:hover{border-color:var(--accent)}
+.hero-actions{position:absolute;top:22px;right:22px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.done-banner{position:relative;z-index:2;display:inline-flex;gap:8px;align-items:center;margin-top:12px;font-size:12.5px;color:var(--accent);font-weight:600}
+
+/* ---------- links ---------- */
+.sec{padding:22px 28px;border-top:1px solid var(--line)}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.link-block{margin-bottom:14px}
+.link-block .label{font-size:10.5px;margin-bottom:7px;display:block}
+.link-row{display:flex;align-items:center;gap:10px;background:var(--input);border:1px solid var(--line);border-radius:10px;padding:9px 9px 9px 14px}
+.link-row a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent);text-decoration:none;font-size:12.5px}
+.link-row a:hover{text-decoration:underline}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line2);white-space:nowrap}
+.chip img,.flag{width:18px;height:12px;object-fit:cover;border-radius:2px;flex-shrink:0}
+.chip.pick{cursor:pointer;user-select:none}
+.chip.pick.on{background:var(--soft);border-color:var(--accent);color:var(--accent)}
+.prog{display:flex;justify-content:space-between;margin-bottom:9px}
+.bar{height:12px;border-radius:99px;background:var(--panel3);overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width .5s;box-shadow:0 0 12px var(--glow)}
+
+/* ---------- tasks ---------- */
+.toolbar{display:flex;align-items:center;gap:10px;margin:26px 0 12px;flex-wrap:wrap}
+.toolbar h3{margin:0;font-size:20px}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--muted);user-select:none}
+.switch i{width:34px;height:19px;border-radius:99px;background:var(--panel3);border:1px solid var(--line2);position:relative;transition:.15s}
+.switch i::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:var(--muted);top:2px;left:2px;transition:.15s}
+.switch.on i{background:var(--soft);border-color:var(--accent)}
+.switch.on i::after{left:17px;background:var(--accent)}
+.group{margin-bottom:16px}
+.group-h{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--panel2);border-left:3px solid var(--accent)}
+.group-h .nm{font-weight:700;font-size:16px}
+.pill-c{font-size:11px;border:1px solid var(--line2);border-radius:99px;padding:2px 9px;color:var(--muted)}
+.mini-bar{width:110px;height:6px;border-radius:9px;background:var(--panel3);overflow:hidden;margin-left:auto}
+.mini-bar i{display:block;height:100%;background:var(--accent)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1000px}
+th{text-align:left;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:700;padding:12px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr.mine td{background:linear-gradient(90deg,var(--soft),transparent 60%)}
+td.num{color:var(--muted);text-align:center;width:40px}
+.sbar{display:block;width:4px;height:28px;border-radius:3px;background:var(--dim)}
+.sbar.s-fazendo{background:var(--blue)}.sbar.s-concluido{background:var(--accent)}.sbar.s-pendente{background:var(--amber)}
+.lang-cell{display:flex;align-items:center;gap:8px;font-weight:600;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--input);white-space:nowrap}
+td .in{padding:7px 10px;font-size:13px}
+.pill.in{font-weight:600}
+.s-pendente.pill{background-color:var(--graySoft)}
+.s-fazendo.pill{background-color:var(--blueSoft);color:#93b8ff;border-color:rgba(59,130,246,.45)}
+.s-concluido.pill,.r-revisado.pill{background-color:var(--soft);color:var(--accent);border-color:var(--glow)}
+.r-revisando.pill,.u-media.pill{background-color:var(--amberSoft);color:var(--amber);border-color:rgba(245,158,11,.4)}
+.r-correcao.pill,.u-alta.pill{background-color:var(--redSoft);color:#ff8a8a;border-color:rgba(239,68,68,.45)}
+.u-baixa.pill{background-color:var(--graySoft);color:var(--muted)}
+[data-theme=light] .s-fazendo.pill{color:#1d4ed8}
+[data-theme=light] .r-correcao.pill,[data-theme=light] .u-alta.pill{color:#b91c1c}
+[data-theme=light] .r-revisando.pill,[data-theme=light] .u-media.pill{color:#b45309}
+.foot-note{color:var(--dim);font-size:12.5px;padding:14px 20px;border-top:1px solid var(--line)}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .display{font-size:26px;color:var(--text);margin-bottom:6px}
+
+/* ---------- team / history ---------- */
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:28px 0 20px;flex-wrap:wrap}
+.page-h h2{font-size:34px;margin:0;line-height:1}
+.page-h p{margin:6px 0 0;color:var(--muted)}
+.role-tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--panel3);border:1px solid var(--line2);margin:2px 4px 2px 0}
+.role-tag.admin{color:var(--amber);border-color:rgba(245,158,11,.4)}
+.status-dot{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.status-dot i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.status-dot.off i{background:var(--red)}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.hist{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s}
+.hist:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hist .pimg{aspect-ratio:16/10;background-size:cover;background-position:center;position:relative}
+.hist .pimg .ph{width:100%;height:100%;display:grid;place-items:center;font-family:Oswald;font-size:34px;color:#fff;background:linear-gradient(150deg,#15803d,#052e16)}
+.hist .ok{position:absolute;top:10px;right:10px;background:var(--accent);color:#04140a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px}
+.hist .b{padding:14px 16px}
+.hist .b .display{font-size:18px;line-height:1.15}
+.hist .b small{display:block;color:var(--muted);margin-top:6px;font-size:12px}
+
+/* ---------- modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:50px 16px;overflow:auto}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:16px;width:100%;max-width:620px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.modal.wide{max-width:780px}
+.modal-h{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+.modal-h h3{margin:0;font-size:22px}
+.modal-b{padding:22px}
+.modal-f{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.poster-edit{display:flex;gap:18px;align-items:flex-start}
+.poster-edit .poster{width:120px}
+.drop{border:1.5px dashed var(--line2);border-radius:10px;padding:14px;text-align:center;color:var(--muted);cursor:pointer;font-size:13px}
+.drop:hover{border-color:var(--accent);color:var(--accent)}
+.link-edit{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+.link-edit .top{display:grid;grid-template-columns:160px 1fr 30px;gap:8px;margin-bottom:8px}
+.checks{display:flex;flex-wrap:wrap;gap:8px}
+.check{display:inline-flex;gap:7px;align-items:center;padding:7px 11px;border:1px solid var(--line2);border-radius:8px;cursor:pointer;font-size:13px;user-select:none}
+.check.on{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+.lang-picker{max-height:190px;overflow:auto;padding:2px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line2);padding:11px 18px;border-radius:10px;box-shadow:var(--shadow);z-index:200;font-weight:600;font-size:13px}
+.toast.bad{border-color:var(--red);color:var(--red)}
+.demo-flag{font-size:11px;color:var(--amber);border:1px dashed var(--amber);padding:3px 8px;border-radius:6px;cursor:pointer}
+.loading{min-height:100%;display:grid;place-items:center;color:var(--muted)}
+
+@media (max-width:960px){
+  #login{grid-template-columns:1fr}.login-art{display:none}
+  .layout{grid-template-columns:1fr}
+  aside.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  header.top{flex-wrap:wrap}.nav{margin-left:0}
+  .hero{flex-direction:column;align-items:flex-start}.hero-actions{position:relative;top:0;right:0;justify-content:flex-start}
+  .hero-info h1{font-size:34px}
+  .tabs{overflow-x:auto}
+  .row2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="boot" class="loading">Carregando…</div>
+<div id="login" class="hidden"></div>
+<div id="app" class="hidden"></div>
+<div id="modal-root"></div>
+
+<script type="module">
+/* =====================================================================
+   CONFIGURAÇÃO — cole aqui o objeto do seu projeto Firebase.
+   Enquanto ficar null, o site roda em MODO DEMONSTRAÇÃO (dados só no navegador).
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDzpmZ3_J82kKXROiu3cnS6KjHQ-eKfIaA",
+  authDomain: "estacao-editores.firebaseapp.com",
+  projectId: "estacao-editores",
+  storageBucket: "estacao-editores.firebasestorage.app",
+  messagingSenderId: "337168487743",
+  appId: "1:337168487743:web:e241ac7d58ca16aab3ef8a"
+};
+const OWNER_EMAIL = 'declanhygorp@gmail.com'; // sempre administrador
+
+/* ---------------- constantes ---------------- */
+const AREAS = [{id:'vocal',name:'Vocal'},{id:'efeitos',name:'Efeitos'},{id:'musica',name:'Música'}];
+const ROLES = {admin:'Administrador / sócio',vocal:'Editor de vocal',efeitos:'Editor de efeitos',musica:'Editor de música',material:'Editor de material',revisor:'Revisor'};
+const STATUS = {pendente:'Pendente',fazendo:'Fazendo',concluido:'Concluído'};
+const REVIEW = {pendente:'Pendente',revisando:'Revisando',correcao:'Correção',revisado:'Revisado'};
+const URG = {baixa:'Baixa',media:'Média',alta:'Alta'};
+const LANGS = [['Inglês','us'],['Português (BR)','br'],['Português (PT)','pt'],['Espanhol','es'],['Espanhol (LatAm)','mx'],['Francês','fr'],['Alemão','de'],['Italiano','it'],['Russo','ru'],['Ucraniano','ua'],['Georgiano','ge'],['Uzbeque','uz'],['Cazaque','kz'],['Hindi','in'],['Tâmil','in'],['Telugu','in'],['Malaiala','in'],['Kannada/Canarês','in'],['Bengali','bd'],['Húngaro','hu'],['Japonês','jp'],['Coreano','kr'],['Chinês','cn'],['Polonês','pl'],['Tailandês','th'],['Tcheco','cz'],['Turco','tr'],['Árabe','sa'],['Indonésio','id'],['Vietnamita','vn'],['Holandês','nl'],['Romeno','ro'],['Grego','gr'],['Sueco','se'],['Hebraico','il'],['Persa','ir'],['Filipino','ph'],['Malaio','my']];
+
+/* ---------------- utilidades ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const fmtTs = ts => ts ? new Date(ts).toLocaleDateString('pt-BR') : '—';
+const fmtD = s => s ? s.split('-').reverse().join('/') : '—';
+const initials = n => (n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const uidGen = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const store = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
+function flagCode(lang){ const base=String(lang||'').replace(/\s*(5\.1|2\.0|7\.1|stereo|est[ée]reo)\s*$/i,'').trim().toLowerCase(); const f=LANGS.find(l=>l[0].toLowerCase()===base); return f?f[1]:null; }
+function flagImg(lang){ const c=flagCode(lang); return c?`<img class="flag" src="https://flagcdn.com/w40/${c}.png" alt="" onerror="this.remove()">`:''; }
+const langChip = l => `<span class="chip">${flagImg(l)}${esc(l)}</span>`;
+function posterHtml(f){ return f.poster ? `<img src="${esc(f.poster)}" alt="">` : `<div class="ph">${esc(initials(f.title))}</div>`; }
+
+/* =====================================================================
+   BACKEND DEMO (localStorage) — mesma interface do Firebase
+   ===================================================================== */
+function seedDemo(){
+  const now=Date.now();
+  return {
+    users:[{uid:'u_admin',name:'Administrador',email:OWNER_EMAIL,roles:['admin'],active:true}],
+    films:[{id:'f1',title:'Superbad',status:'ativo',order:1,createdAt:now,startedAt:now,poster:'',driveLink:'',links:[],material:{vocal:false,efeitos:false,musica:false}}],
+    tasks:{f1:[]},
+  };
+}
+function makeDemoApi(){
+  const KEY='estacao-editores-demo-v2';
+  let s=store.get(KEY,null)||seedDemo();
+  const L={users:new Set(),films:new Set(),tasks:new Map(),auth:null};
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  let cur=store.get(KEY+'-me',null);
+  const save=()=>store.set(KEY,s);
+  const emitU=()=>L.users.forEach(cb=>cb(clone(s.users)));
+  const emitF=()=>L.films.forEach(cb=>cb(clone(s.films)));
+  const emitT=fid=>(L.tasks.get(fid)||new Set()).forEach(cb=>cb(clone(s.tasks[fid]||[])));
+  const emitMe=()=>{ if(!L.auth) return; const u=s.users.find(x=>x.uid===cur); L.auth(u?clone(u):(cur?{uid:cur,noProfile:true}:null)); };
+  const ok=v=>new Promise(r=>setTimeout(()=>r(v),120));
+  return {
+    demo:true,
+    demoUsers:()=>clone(s.users),
+    reset(){ s=seedDemo(); save(); emitU(); emitF(); Object.keys(s.tasks).forEach(emitT); emitMe(); },
+    onAuth(cb){ L.auth=cb; emitMe(); },
+    login(uid){ cur=uid; store.set(KEY+'-me',cur); emitMe(); return ok(); },
+    logout(){ cur=null; store.set(KEY+'-me',null); emitMe(); return ok(); },
+    resetPassword:()=>ok(), changePassword:()=>ok(),
+    watchUsers(cb){ L.users.add(cb); cb(clone(s.users)); return ()=>L.users.delete(cb); },
+    watchFilms(cb){ L.films.add(cb); cb(clone(s.films)); return ()=>L.films.delete(cb); },
+    watchTasks(fid,cb){ if(!L.tasks.has(fid)) L.tasks.set(fid,new Set()); L.tasks.get(fid).add(cb); cb(clone(s.tasks[fid]||[])); return ()=>L.tasks.get(fid).delete(cb); },
+    createFilm(d){ const id=uidGen(); s.films.push({id,...d}); save(); emitF(); return ok(id); },
+    updateFilm(id,p){ const f=s.films.find(x=>x.id===id); Object.assign(f,p); save(); emitF(); return ok(); },
+    deleteFilm(id){ s.films=s.films.filter(x=>x.id!==id); delete s.tasks[id]; save(); emitF(); return ok(); },
+    addTasks(fid,list){ s.tasks[fid]=s.tasks[fid]||[]; list.forEach(t=>s.tasks[fid].push({id:uidGen(),...t})); save(); emitT(fid); return ok(); },
+    updateTask(fid,tid,p){ Object.assign((s.tasks[fid]||[]).find(x=>x.id===tid),p); save(); emitT(fid); return ok(); },
+    deleteTask(fid,tid){ s.tasks[fid]=(s.tasks[fid]||[]).filter(x=>x.id!==tid); save(); emitT(fid); return ok(); },
+    createUser({name,email,roles}){ if(s.users.some(u=>u.email.toLowerCase()===email.toLowerCase())) return Promise.reject(new Error('Esse e-mail já está cadastrado.')); s.users.push({uid:uidGen(),name,email,roles,active:true,mustChangePassword:true}); save(); emitU(); return ok(); },
+    updateUser(uid,p){ Object.assign(s.users.find(u=>u.uid===uid),p); save(); emitU(); emitMe(); return ok(); },
+    deleteUser(uid){ s.users=s.users.filter(u=>u.uid!==uid); save(); emitU(); return ok(); },
+    setFirstPassword(uid){ Object.assign(s.users.find(u=>u.uid===uid),{mustChangePassword:false}); save(); emitU(); emitMe(); return ok(); },
+  };
+}
+
+/* =====================================================================
+   BACKEND FIREBASE (Auth + Firestore — plano gratuito)
+   ===================================================================== */
+async function makeFirebaseApi(cfg){
+  const V='10.12.2', B=`https://www.gstatic.com/firebasejs/${V}/`;
+  const [A,AU,FS]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+  const app=A.initializeApp(cfg), auth=AU.getAuth(app), db=FS.getFirestore(app);
+  let unsubMe=null;
+  const list=q=>q.docs.map(d=>({id:d.id,...d.data()}));
+  return {
+    demo:false,
+    onAuth(cb){
+      AU.onAuthStateChanged(auth,u=>{
+        if(unsubMe){unsubMe();unsubMe=null;}
+        if(!u){cb(null);return;}
+        const ref=FS.doc(db,'users',u.uid);
+        unsubMe=FS.onSnapshot(ref,async snap=>{
+          if(!snap.exists()){
+            if((u.email||'').toLowerCase()===OWNER_EMAIL){ await FS.setDoc(ref,{name:'Administrador',email:u.email,roles:['admin'],active:true,createdAt:Date.now()}); return; }
+            cb({uid:u.uid,email:u.email,noProfile:true}); return;
+          }
+          cb({uid:u.uid,...snap.data()});
+        },err=>cb({uid:u.uid,email:u.email,noProfile:true,error:err.message}));
+      });
+    },
+    login:(e,p)=>AU.signInWithEmailAndPassword(auth,e,p),
+    ownerSignup(e,p){ if(e.trim().toLowerCase()!==OWNER_EMAIL) return Promise.reject(new Error('Esse botão é só para o e-mail do administrador principal.')); return AU.createUserWithEmailAndPassword(auth,e.trim(),p); },
+    logout:()=>AU.signOut(auth),
+    resetPassword:e=>AU.sendPasswordResetEmail(auth,e),
+    async changePassword(curPw,newPw){ const u=auth.currentUser; await AU.reauthenticateWithCredential(u,AU.EmailAuthProvider.credential(u.email,curPw)); await AU.updatePassword(u,newPw); },
+    watchUsers:cb=>FS.onSnapshot(FS.collection(db,'users'),q=>cb(q.docs.map(d=>({uid:d.id,...d.data()})))),
+    watchFilms:cb=>FS.onSnapshot(FS.collection(db,'films'),q=>cb(list(q))),
+    watchTasks:(fid,cb)=>FS.onSnapshot(FS.collection(db,'films',fid,'tasks'),q=>cb(list(q))),
+    async createFilm(d){ return (await FS.addDoc(FS.collection(db,'films'),d)).id; },
+    updateFilm:(id,p)=>FS.updateDoc(FS.doc(db,'films',id),p),
+    async deleteFilm(id){ const q=await FS.getDocs(FS.collection(db,'films',id,'tasks')); const b=FS.writeBatch(db); q.forEach(d=>b.delete(d.ref)); b.delete(FS.doc(db,'films',id)); await b.commit(); },
+    async addTasks(fid,arr){ const b=FS.writeBatch(db); arr.forEach(t=>b.set(FS.doc(FS.collection(db,'films',fid,'tasks')),t)); await b.commit(); },
+    updateTask:(fid,tid,p)=>FS.updateDoc(FS.doc(db,'films',fid,'tasks',tid),p),
+    deleteTask:(fid,tid)=>FS.deleteDoc(FS.doc(db,'films',fid,'tasks',tid)),
+    async createUser({name,email,password,roles}){
+      const sec=A.getApps().find(a=>a.name==='sec')||A.initializeApp(cfg,'sec');
+      const sa=AU.getAuth(sec);
+      const c=await AU.createUserWithEmailAndPassword(sa,email,password);
+      await FS.setDoc(FS.doc(db,'users',c.user.uid),{name,email,roles,active:true,mustChangePassword:true,createdAt:Date.now()});
+      await AU.signOut(sa);
+    },
+    updateUser:(uid,p)=>FS.updateDoc(FS.doc(db,'users',uid),p),
+    deleteUser:uid=>FS.deleteDoc(FS.doc(db,'users',uid)),
+    async setFirstPassword(uid,pw){ await AU.updatePassword(auth.currentUser,pw); await FS.updateDoc(FS.doc(db,'users',uid),{mustChangePassword:false}); },
+  };
+}
+
+/* =====================================================================
+   ESTADO
+   ===================================================================== */
+let api, me=null, users=[], films=[], tasks=[], selId=null, view='prod', tab=null, onlyMine=false;
+let unsubs=[], unsubTasks=null, tasksFor=null, theme=store.get('ee-theme','dark');
+document.documentElement.dataset.theme=theme;
+
+const roles = () => (me&&me.roles)||[];
+const isAdmin = () => !!me && (roles().includes('admin') || (me.email||'').toLowerCase()===OWNER_EMAIL);
+const has = r => roles().includes(r);
+const canMaterial = () => isAdmin() || has('material');
+const userName = uid => (users.find(u=>u.uid===uid)||{}).name || '—';
+const activeFilm = () => films.find(f=>f.status==='ativo');
+const queue = () => films.filter(f=>f.status==='fila').sort((a,b)=>(a.order||0)-(b.order||0));
+const history = () => films.filter(f=>f.status==='concluido').sort((a,b)=>(b.completedAt||0)-(a.completedAt||0));
+const selFilm = () => films.find(f=>f.id===selId);
+
+/* ---------------- feedback ---------------- */
+let saveT;
+function setSaved(state,msg){ const el=$('#saved'); if(!el) return; el.className='saved'+(state==='busy'?' busy':state==='bad'?' bad':''); el.textContent=msg; }
+async function run(p,okMsg){
+  setSaved('busy','● Salvando…');
+  try{ const r=await p; setSaved('ok','● Alterações salvas'); if(okMsg) toast(okMsg); return r; }
+  catch(e){ console.error(e); setSaved('bad','● Erro ao salvar'); toast(traduz(e),true); throw e; }
+}
+function traduz(e){
+  const c=(e&&e.code)||'', m=(e&&e.message)||String(e);
+  const map={'auth/invalid-credential':'E-mail ou senha incorretos.','auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Usuário não encontrado.','auth/email-already-in-use':'Esse e-mail já está cadastrado.','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/invalid-email':'E-mail inválido.','auth/too-many-requests':'Muitas tentativas. Espere um pouco.','permission-denied':'Você não tem permissão para isso.','auth/requires-recent-login':'Entre de novo para trocar a senha.'};
+  return map[c]||m;
+}
+function toast(msg,bad){ const t=document.createElement('div'); t.className='toast'+(bad?' bad':''); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); }
+
+/* ---------------- modais ---------------- */
+function openModal(html,{wide}={}){ $('#modal-root').innerHTML=`<div class="modal-bg" data-bg><div class="modal ${wide?'wide':''}">${html}</div></div>`; const bg=$('#modal-root .modal-bg'); bg.addEventListener('mousedown',e=>{ if(e.target===bg) closeModal(); }); return bg; }
+function closeModal(){ $('#modal-root').innerHTML=''; }
+function confirmBox(title,text,okLabel='Confirmar',danger){
+  return new Promise(res=>{
+    const bg=openModal(`<div class="modal-h"><h3 class="display">${esc(title)}</h3></div><div class="modal-b">${text}</div><div class="modal-f"><button class="btn" id="cf-no">Cancelar</button><button class="btn ${danger?'danger':'primary'}" id="cf-ok">${esc(okLabel)}</button></div>`);
+    bg.querySelector('#cf-no').onclick=()=>{closeModal();res(false)};
+    bg.querySelector('#cf-ok').onclick=()=>{closeModal();res(true)};
+  });
+}
+
+/* =====================================================================
+   LOGIN
+   ===================================================================== */
+function renderLogin(msg){
+  $('#boot').classList.add('hidden'); $('#app').classList.add('hidden');
+  const L=$('#login'); L.classList.remove('hidden');
+  const demo=api.demo;
+  L.innerHTML=`
+  <div class="login-art"><div class="strip s1"></div><div class="strip s2"></div>
+    <h1 class="display">Estação<br>de <b>Editores</b></h1>
+    <p>Vocal, efeitos e música de cada filme num lugar só. Fila de produção, revisões e entregas sincronizadas em tempo real para toda a equipe.</p>
+  </div>
+  <div class="login-box"><div class="login-card">
+    <div class="brand"><div class="brand-logo">${clapIcon()}</div><div><div class="display" style="font-size:20px">Estação de Editores</div><div style="font-size:12px;color:var(--muted)">Vocal · Efeitos · Música</div></div></div>
+    <h2 class="display">Entrar</h2><p class="sub">Use o e-mail e a senha que o administrador cadastrou para você.</p>
+    ${demo?'':`
+    <form id="lf">
+      <label class="field"><span>E-mail</span><input class="in" id="le" type="email" autocomplete="username" required></label>
+      <label class="field"><span>Senha</span><input class="in" id="lp" type="password" autocomplete="current-password" required></label>
+      <div class="err" id="lerr">${esc(msg||'')}</div>
+      <button class="btn primary" style="width:100%;justify-content:center;padding:11px" id="lb">Entrar</button>
+      <div style="text-align:center;margin-top:14px"><a href="#" id="forgot" style="font-size:13px">Esqueci minha senha</a></div>
+      <div style="text-align:center;margin-top:8px"><a href="#" id="ownerFirst" style="font-size:12px;color:var(--dim)">Primeiro acesso do administrador principal</a></div>
+    </form>`}
+    ${demo?`<div class="demo-box"><div class="label" style="color:var(--amber)">Modo demonstração</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">O banco de dados ainda não foi conectado. Escolha uma pessoa para ver o site como ela vê:</div>
+      <div class="demo-users">${api.demoUsers().map(u=>`<button class="btn sm" data-demo="${u.uid}">${esc(u.name)} · ${esc((u.roles||[]).map(r=>ROLES[r]).join(', '))}</button>`).join('')}</div></div>`:''}
+  </div></div>`;
+  if(demo){ L.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>api.login(b.dataset.demo)); return; }
+  $('#lf').onsubmit=async e=>{ e.preventDefault(); $('#lb').disabled=true; $('#lerr').textContent='';
+    try{ await api.login($('#le').value.trim(),$('#lp').value); }catch(err){ $('#lerr').textContent=traduz(err); $('#lb').disabled=false; } };
+  $('#ownerFirst').onclick=async e=>{ e.preventDefault(); const em=$('#le').value.trim(), pw=$('#lp').value;
+    if(!em||pw.length<6){ $('#lerr').textContent='Digite seu e-mail e a senha que você quer usar (mínimo 6 caracteres) e clique de novo.'; return; }
+    try{ await api.ownerSignup(em,pw); }catch(err){ $('#lerr').textContent=traduz(err); } };
+  $('#forgot').onclick=async e=>{ e.preventDefault(); const em=$('#le').value.trim(); if(!em){ $('#lerr').textContent='Digite seu e-mail acima primeiro.'; return; }
+    try{ await api.resetPassword(em); $('#lerr').style.color='var(--accent)'; $('#lerr').textContent='Enviamos um link para redefinir a senha no seu e-mail.'; }catch(err){ $('#lerr').textContent=traduz(err); } };
+}
+function renderBlocked(text){
+  $('#boot').classList.add('hidden'); $('#app').classList.add('hidden');
+  const L=$('#login'); L.classList.remove('hidden');
+  L.innerHTML=`<div class="login-box" style="grid-column:1/-1"><div class="login-card" style="text-align:center"><div class="brand-logo" style="margin:0 auto">${clapIcon()}</div><h2 class="display">Acesso não liberado</h2><p class="sub">${esc(text)}</p><button class="btn" id="bo">Sair</button></div></div>`;
+  $('#bo').onclick=()=>api.logout();
+}
+function renderFirstPassword(p){
+  $('#boot').classList.add('hidden'); $('#app').classList.add('hidden');
+  const L=$('#login'); L.classList.remove('hidden');
+  L.innerHTML=`<div class="login-box" style="grid-column:1/-1"><div class="login-card">
+    <div class="brand"><div class="brand-logo">${clapIcon()}</div><div class="display" style="font-size:20px">Estação de Editores</div></div>
+    <h2 class="display">Crie sua senha</h2><p class="sub">Olá, ${esc(p.name||'')}! A senha que você recebeu é de uso único. Escolha agora a sua senha pessoal para continuar.</p>
+    <form id="fp">
+      <label class="field"><span>Nova senha</span><input class="in" id="fp1" type="password" autocomplete="new-password" required></label>
+      <label class="field"><span>Repita a nova senha</span><input class="in" id="fp2" type="password" autocomplete="new-password" required></label>
+      <div class="err" id="fperr"></div>
+      <button class="btn primary" style="width:100%;justify-content:center;padding:11px" id="fpb">Salvar e entrar</button>
+      <div style="text-align:center;margin-top:14px"><a href="#" id="fpout" style="font-size:13px">Sair</a></div>
+    </form></div></div>`;
+  $('#fpout').onclick=e=>{e.preventDefault();api.logout();};
+  $('#fp').onsubmit=async e=>{ e.preventDefault();
+    const a=$('#fp1').value,b=$('#fp2').value;
+    if(a.length<6){ $('#fperr').textContent='A senha precisa ter pelo menos 6 caracteres.'; return; }
+    if(a!==b){ $('#fperr').textContent='As duas senhas não são iguais.'; return; }
+    $('#fpb').disabled=true;
+    try{ await api.setFirstPassword(p.uid,a); }catch(err){ $('#fperr').textContent=traduz(err); $('#fpb').disabled=false; }
+  };
+}
+function clapIcon(){ return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4Z"/><path d="m4 11-.88-2.87a2 2 0 0 1 1.33-2.5l11.48-3.5a2 2 0 0 1 2.5 1.32l.87 2.87L4 11Z"/><path d="m6.6 4.99 3.38 4.2"/><path d="m11.86 3.38 3.38 4.2"/></svg>`; }
+
+/* =====================================================================
+   APP
+   ===================================================================== */
+function startData(){
+  unsubs.forEach(u=>u()); unsubs=[];
+  unsubs.push(api.watchUsers(u=>{ users=u; render(); }));
+  let firstFilms=true;
+  unsubs.push(api.watchFilms(f=>{ films=f;
+    if(firstFilms){ firstFilms=false; if(!api.demo&&isAdmin()&&!f.length&&!store.get('ee-seeded-superbad',false)){ store.set('ee-seeded-superbad',true); api.createFilm({title:'Superbad',status:'ativo',order:1,createdAt:Date.now(),startedAt:Date.now(),poster:'',driveLink:'',links:[],material:{vocal:false,efeitos:false,musica:false}}); } } if(!selId||!films.some(x=>x.id===selId)) selId=(activeFilm()||queue()[0]||{}).id||null; render(); }));
+}
+function stopData(){ unsubs.forEach(u=>u()); unsubs=[]; if(unsubTasks){unsubTasks();unsubTasks=null;} tasksFor=null; users=[];films=[];tasks=[];selId=null; }
+function ensureTasks(){
+  if(tasksFor===selId) return;
+  if(unsubTasks){unsubTasks();unsubTasks=null;}
+  tasks=[]; tasksFor=selId;
+  if(selId) unsubTasks=api.watchTasks(selId,t=>{ tasks=t; render(); });
+}
+function defaultTab(){ const r=AREAS.find(a=>has(a.id)); return r?r.id:'vocal'; }
+
+function render(){
+  if(!me) return;
+  ensureTasks();
+  if(!tab) tab=defaultTab();
+  if(view!=='prod' && !isAdmin()) view='prod';
+  $('#login').classList.add('hidden'); $('#boot').classList.add('hidden');
+  const A=$('#app'); A.classList.remove('hidden');
+  const scrollY=window.scrollY;
+  const roleTxt=isAdmin()?'Administrador':roles().map(r=>ROLES[r]).join(' · ')||'Sem cargo';
+  A.innerHTML=`
+  <header class="top">
+    <div class="brand"><div class="brand-logo">${clapIcon()}</div>
+      <div><div class="title display">Estação de Editores</div><div class="subt">Vocal · Efeitos · Música — sincronizado em tempo real</div></div></div>
+    ${isAdmin()?`<nav class="nav">
+      <button class="${view==='prod'?'on':''}" data-act="view" data-id="prod">Produção</button>
+      <button class="${view==='team'?'on':''}" data-act="view" data-id="team">Equipe</button>
+      <button class="${view==='history'?'on':''}" data-act="view" data-id="history">Histórico</button></nav>`:''}
+    <div class="spacer"></div>
+    ${api.demo?`<span class="demo-flag" data-act="resetDemo" title="Clique para restaurar os dados de exemplo">MODO DEMO · restaurar</span>`:''}
+    <span class="saved" id="saved">● Alterações salvas</span>
+    <div class="theme"><button class="${theme==='dark'?'on':''}" data-act="theme" data-id="dark">Dark</button><button class="${theme==='light'?'on':''}" data-act="theme" data-id="light">White</button></div>
+    <div class="me" data-act="account" title="Minha conta"><div class="avatar">${esc(initials(me.name))}</div><div><div class="nm">${esc(me.name||me.email)}</div><div class="rl">${esc(roleTxt)}</div></div></div>
+    <button class="btn sm" data-act="logout">Sair</button>
+  </header>
+  <div class="layout">
+    <aside class="side">${sidebar()}</aside>
+    <main>${view==='team'?teamView():view==='history'?historyView():prodView()}</main>
+  </div>`;
+  window.scrollTo(0,scrollY);
+}
+
+/* ---------------- sidebar ---------------- */
+function sidebar(){
+  const a=activeFilm(), q=queue();
+  return `
+  <div class="side-h"><span class="label">Fila de produção</span><span class="rec"><i></i>REC</span></div>
+  ${a?`<div class="now ${selId===a.id&&view==='prod'?'sel':''}" data-act="selFilm" data-id="${a.id}">
+      <div class="eq"><b></b><b></b><b></b></div>
+      <div class="k"><i></i>EDITANDO AGORA</div>
+      <div class="t display">${esc(a.title)}</div></div>`
+    :`<div class="empty-side">Nenhum filme sendo editado agora.</div>`}
+  <div class="label" style="padding:8px 4px 0">↓ Próximos filmes</div>
+  ${q.length?q.map((f,i)=>`
+    <div class="q-item ${i===0?'next':''} ${selId===f.id&&view==='prod'?'sel':''}" data-act="selFilm" data-id="${f.id}">
+      <div class="q-num mono">${String(i+2).padStart(2,'0')}</div>
+      <div style="min-width:0"><div class="q-k">${i===0?'PRÓXIMO':'NA FILA'}</div><div class="q-t">🎬 ${esc(f.title)}</div></div>
+      ${isAdmin()?`<div class="q-arrows"><button data-act="moveUp" data-id="${f.id}" title="Subir">▲</button><button data-act="moveDown" data-id="${f.id}" title="Descer">▼</button></div>`:''}
+    </div>`).join(''):`<div class="empty-side">A fila está vazia.</div>`}
+  <div class="side-foot">
+    ${isAdmin()?`<button class="btn primary" style="justify-content:center" data-act="newFilm">+ Adicionar filme</button>
+    <button class="btn" style="justify-content:center" data-act="view" data-id="history">Histórico de filmes concluídos</button>`:''}
+  </div>`;
+}
+
+/* ---------------- produção ---------------- */
+function areaStats(list){
+  const total=list.length, done=list.filter(t=>t.status==='concluido').length, doing=list.some(t=>t.status!=='pendente');
+  const pct=total?Math.round(done/total*100):0;
+  let label='Sem tarefas', cls='';
+  if(total){ if(done===total){label='Concluído';cls='ok';} else if(doing){label=`Fazendo (${pct}%)`;cls='doing';} else label='Pendente'; }
+  return {total,done,pct,label,cls};
+}
+function prodView(){
+  const f=selFilm();
+  if(!f) return `<div class="empty" style="margin-top:60px"><div class="display">Nenhum filme ainda</div>${isAdmin()?'Clique em “Adicionar filme” para começar a fila.':'Quando o administrador cadastrar um filme, ele aparece aqui.'}</div>`;
+  const ad=isAdmin();
+  const all=areaStats(tasks);
+  const tabs=AREAS.map(a=>{ const s=areaStats(tasks.filter(t=>t.area===a.id)); return `<button class="tab ${tab===a.id?'on':''}" data-act="tab" data-id="${a.id}"><span class="dot ${s.cls}"></span><span class="display">${a.name}</span><small>${s.label}</small></button>`; }).join('')
+    +`<button class="tab ${tab==='resumo'?'on':''}" data-act="tab" data-id="resumo"><span class="dot ${all.cls}"></span><span class="display">Resumo</span><small>${all.total} idiomas</small></button>`;
+  const statusTxt=f.status==='ativo'?'Editando agora':f.status==='fila'?`Na fila · posição ${queue().findIndex(x=>x.id===f.id)+2}`:'Concluído';
+  const mat=f.material||{};
+  const matBadges=AREAS.map(a=>`<span class="badge ${mat[a.id]?'on':''} ${canMaterial()&&f.status!=='concluido'?'click':''}" ${canMaterial()&&f.status!=='concluido'?`data-act="toggleMat" data-id="${a.id}" title="Clique para mudar"`:''}>${mat[a.id]?'✓':'○'} Material ${a.name} ${mat[a.id]?'liberado':'não liberado'}</span>`).join('');
+  const actions=[];
+  if(ad){
+    actions.push(`<button class="btn sm" data-act="editFilm">Editar filme</button>`);
+    if(f.status==='fila') actions.push(`<button class="btn sm primary" data-act="startFilm">Começar agora</button>`);
+    if(f.status==='ativo') actions.push(`<button class="btn sm primary" data-act="concludeFilm">Concluir filme</button>`);
+    if(f.status==='concluido') actions.push(`<button class="btn sm" data-act="reopenFilm">Reabrir</button>`);
+    actions.push(`<button class="btn sm danger" data-act="deleteFilm">Excluir</button>`);
+  } else if(has('material') && f.status!=='concluido') actions.push(`<button class="btn sm" data-act="editLinks">Editar links</button>`);
+
+  const links=[];
+  if(f.driveLink) links.push({label:'Drive',url:f.driveLink,langs:[]});
+  (f.links||[]).forEach(l=>links.push(l));
+  return `
+  <div class="tabs">${tabs}</div>
+  <div class="card">
+    <div class="hero">
+      <div class="hero-bg" style="${f.poster?`background-image:url('${esc(f.poster)}')`:'background:linear-gradient(120deg,#14532d,#052e16)'}"></div>
+      <div class="perf t"></div><div class="perf b"></div>
+      <div class="poster">${posterHtml(f)}</div>
+      <div class="hero-info">
+        <div class="label">Nome do filme · ${esc(statusTxt)}</div>
+        <h1 class="display">${esc(f.title)}</h1>
+        <div class="badges">${matBadges}</div>
+        ${f.status==='concluido'?`<div class="done-banner">✓ Concluído em ${fmtTs(f.completedAt)} · iniciado em ${fmtTs(f.startedAt)}</div>`:''}
+      </div>
+      <div class="hero-actions">${actions.join('')}</div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span class="label">Caminho para download dos arquivos</span>${(canMaterial()&&!ad&&false)?'':''}</div>
+      ${links.length?links.map(l=>`
+        <div class="link-block"><span class="label">${esc(l.label||'Link')}</span>
+          <div class="link-row"><a class="mono" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.url)}</a><button class="btn sm" data-act="copy" data-v="${esc(l.url)}">Copiar</button></div>
+          ${(l.langs||[]).length?`<div class="chips">${l.langs.map(langChip).join('')}</div>`:''}
+        </div>`).join(''):`<div style="color:var(--dim);font-size:13px">Nenhum link cadastrado ainda.</div>`}
+    </div>
+    <div class="sec">
+      <div class="prog"><span class="label">Progresso acumulado do filme (vocal + efeitos + música)</span><span class="mono" style="font-size:12px;color:var(--muted)">${all.pct}% concluído</span></div>
+      <div class="bar"><i style="width:${all.pct}%"></i></div>
+    </div>
+  </div>
+  ${tab==='resumo'?resumoView():areaView(f)}`;
+}
+function areaView(f){
+  const ad=isAdmin();
+  const area=AREAS.find(a=>a.id===tab);
+  let list=tasks.filter(t=>t.area===tab);
+  if(onlyMine) list=list.filter(t=>t.editorUid===me.uid||t.reviewerUid===me.uid);
+  const groups={};
+  list.sort((a,b)=>(a.order||0)-(b.order||0)).forEach(t=>{(groups[t.editorUid]=groups[t.editorUid]||[]).push(t);});
+  const keys=Object.keys(groups).sort((a,b)=>(b===me.uid)-(a===me.uid)||userName(a).localeCompare(userName(b)));
+  return `
+  <div class="toolbar">
+    <h3 class="display">${area.name}</h3>
+    <span class="switch ${onlyMine?'on':''}" data-act="onlyMine"><i></i>Só os meus</span>
+    <div class="spacer"></div>
+    ${ad&&f.status!=='concluido'?`<button class="btn primary" data-act="assign">+ Atribuir idiomas</button>`:''}
+  </div>
+  ${keys.length?`<div class="card">${keys.map(k=>groupHtml(k,groups[k])).join('')}
+    <div class="foot-note">Clique nos campos para editar — salvamento automático e sincronização em tempo real.</div></div>`
+  :`<div class="card"><div class="empty"><div class="display">Nada por aqui</div>${onlyMine?'Você não tem idiomas nesta área.':ad?'Use “Atribuir idiomas” para distribuir o trabalho.':'Nenhum idioma atribuído nesta área ainda.'}</div></div>`}`;
+}
+function groupHtml(uid,list){
+  const s=areaStats(list), ad=isAdmin();
+  return `<div class="group">
+    <div class="group-h"><div class="avatar">${esc(initials(userName(uid)))}</div><span class="nm">${esc(userName(uid))}${uid===me.uid?' <small style="color:var(--accent);font-weight:600">(você)</small>':''}</span>
+      <span class="pill-c mono">${list.length} ${list.length===1?'idioma':'idiomas'}</span>
+      <div class="mini-bar" title="${s.pct}% concluído"><i style="width:${s.pct}%"></i></div><span class="mono" style="font-size:12px;color:var(--muted);width:38px">${s.pct}%</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th style="width:14px"></th><th>Idioma</th><th style="text-align:center">Nº</th><th>Início</th><th>Entrega</th><th>Urgência</th><th>Revisor</th><th>Status revisão</th><th>Status</th>${ad?'<th></th>':''}</tr></thead>
+    <tbody>${list.map((t,i)=>rowHtml(t,i)).join('')}</tbody></table></div></div>`;
+}
+function selectHtml(field,opts,val,enabled,prefix,tid){
+  return `<select class="in pill ${prefix}${esc(val)}" data-t="${tid}" data-f="${field}" ${enabled?'':'disabled'}>${Object.entries(opts).map(([k,v])=>`<option value="${k}" ${k===val?'selected':''}>${v}</option>`).join('')}</select>`;
+}
+function rowHtml(t,i){
+  const ad=isAdmin(), closed=selFilm()?.status==='concluido'&&!ad;
+  const ed=!closed&&(ad||t.editorUid===me.uid), rv=!closed&&(ad||t.reviewerUid===me.uid);
+  const reviewers=users.filter(u=>u.active!==false&&(u.roles||[]).includes('revisor'));
+  return `<tr class="${t.editorUid===me.uid||t.reviewerUid===me.uid?'mine':''}">
+    <td><span class="sbar s-${t.status}"></span></td>
+    <td>${ad?`<input class="in" style="font-weight:600;min-width:170px" data-t="${t.id}" data-f="lang" value="${esc(t.lang)}">`:`<div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}</div>`}</td>
+    <td class="num mono">${i+1}</td>
+    <td><input type="date" class="in" data-t="${t.id}" data-f="start" value="${esc(t.start||'')}" ${ed?'':'disabled'}></td>
+    <td><input type="date" class="in" data-t="${t.id}" data-f="delivery" value="${esc(t.delivery||'')}" ${ed?'':'disabled'}></td>
+    <td>${selectHtml('urgency',URG,t.urgency||'media',ad,'u-',t.id)}</td>
+    <td>${ad?`<select class="in" data-t="${t.id}" data-f="reviewerUid"><option value="">— sem revisor —</option>${reviewers.map(u=>`<option value="${u.uid}" ${u.uid===t.reviewerUid?'selected':''}>${esc(u.name)}</option>`).join('')}${t.reviewerUid&&!reviewers.some(u=>u.uid===t.reviewerUid)?`<option value="${t.reviewerUid}" selected>${esc(userName(t.reviewerUid))}</option>`:''}</select>`
+      :`<div class="lang-cell" style="font-weight:500">${esc(t.reviewerUid?userName(t.reviewerUid):'—')}</div>`}</td>
+    <td>${selectHtml('reviewStatus',REVIEW,t.reviewStatus||'pendente',rv,'r-',t.id)}</td>
+    <td>${selectHtml('status',STATUS,t.status||'pendente',ed,'s-',t.id)}</td>
+    ${ad?`<td><button class="icon-btn del" data-act="delTask" data-id="${t.id}" title="Remover">✕</button></td>`:''}
+  </tr>`;
+}
+function resumoView(){
+  const rows=AREAS.flatMap(a=>tasks.filter(t=>t.area===a.id).sort((x,y)=>userName(x.editorUid).localeCompare(userName(y.editorUid))||(x.order-y.order)).map(t=>({...t,areaName:a.name})));
+  return `<div class="toolbar"><h3 class="display">Ficha completa do filme</h3></div>
+  <div class="card">${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Área</th><th>Idioma</th><th>Editor</th><th>Revisor</th><th>Status revisão</th><th>Status</th><th>Início</th><th>Entrega</th></tr></thead><tbody>
+  ${rows.map(t=>`<tr class="${t.editorUid===me.uid||t.reviewerUid===me.uid?'mine':''}"><td>${t.areaName}</td><td><span style="display:inline-flex;gap:8px;align-items:center;font-weight:600">${flagImg(t.lang)}${esc(t.lang)}</span></td><td>${esc(userName(t.editorUid))}</td><td>${esc(t.reviewerUid?userName(t.reviewerUid):'—')}</td>
+  <td><span class="in pill r-${t.reviewStatus}" style="display:inline-block;width:auto">${REVIEW[t.reviewStatus]||'—'}</span></td><td><span class="in pill s-${t.status}" style="display:inline-block;width:auto">${STATUS[t.status]||'—'}</span></td><td class="mono">${fmtD(t.start)}</td><td class="mono">${fmtD(t.delivery)}</td></tr>`).join('')}
+  </tbody></table></div>`:`<div class="empty"><div class="display">Sem tarefas</div>Nenhum idioma atribuído neste filme.</div>`}</div>`;
+}
+
+/* ---------------- equipe ---------------- */
+function teamView(){
+  const list=[...users].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  return `<div class="page-h"><div><h2 class="display">Equipe</h2><p>Cadastre funcionários e sócios e defina o que cada um faz. Uma pessoa pode ter mais de um cargo. No primeiro acesso, cada um troca a senha de uso único pela senha pessoal.</p></div>
+    <button class="btn primary" data-act="newUser">+ Novo funcionário</button></div>
+  <div class="card"><div class="tbl-wrap"><table style="min-width:760px"><thead><tr><th>Nome</th><th>E-mail</th><th>Cargos</th><th>Situação</th><th></th></tr></thead><tbody>
+  ${list.map(u=>`<tr><td><div style="display:flex;gap:10px;align-items:center"><div class="avatar">${esc(initials(u.name))}</div><b>${esc(u.name)}</b></div></td>
+    <td class="mono" style="font-size:12.5px">${esc(u.email)}</td>
+    <td>${(u.roles||[]).map(r=>`<span class="role-tag ${r==='admin'?'admin':''}">${ROLES[r]||r}</span>`).join('')||'<span style="color:var(--dim)">—</span>'}</td>
+    <td><span class="status-dot ${u.active===false?'off':''}"><i></i>${u.active===false?'Desativado':'Ativo'}</span></td>
+    <td style="text-align:right;white-space:nowrap">${api.demo?'':`<button class="btn sm" data-act="resetUserPw" data-id="${u.uid}" title="Envia um e-mail para a pessoa criar uma senha nova">Link de senha</button> `}<button class="btn sm" data-act="editUser" data-id="${u.uid}">Editar</button> ${u.uid!==me.uid?`<button class="btn sm danger" data-act="delUser" data-id="${u.uid}">Remover</button>`:''}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+
+/* ---------------- histórico ---------------- */
+function historyView(){
+  const h=history();
+  return `<div class="page-h"><div><h2 class="display">Filmes concluídos</h2><p>Clique num filme para ver quem fez cada idioma, quem revisou, o status da revisão e as datas de início e entrega.</p></div>
+  <input class="in" style="max-width:260px" placeholder="Buscar filme…" id="hsearch"></div>
+  ${h.length?`<div class="hist-grid" id="hgrid">${h.map(f=>`<div class="hist" data-act="openHist" data-id="${f.id}" data-title="${esc(f.title.toLowerCase())}">
+    <div class="pimg" style="${f.poster?`background-image:url('${esc(f.poster)}')`:''}">${f.poster?'':`<div class="ph">${esc(initials(f.title))}</div>`}<span class="ok">✓ CONCLUÍDO</span></div>
+    <div class="b"><div class="display">${esc(f.title)}</div><small>Início ${fmtTs(f.startedAt)} · Conclusão ${fmtTs(f.completedAt)}</small></div></div>`).join('')}</div>`
+  :`<div class="card"><div class="empty"><div class="display">Nenhum filme concluído</div>Quando você concluir um filme, ele aparece aqui.</div></div>`}`;
+}
+
+/* =====================================================================
+   AÇÕES
+   ===================================================================== */
+const ACT={
+  view(id){ view=id; window.scrollTo(0,0); render(); },
+  theme(id){ theme=id; store.set('ee-theme',id); document.documentElement.dataset.theme=id; render(); },
+  tab(id){ tab=id; render(); },
+  onlyMine(){ onlyMine=!onlyMine; render(); },
+  selFilm(id){ selId=id; view='prod'; render(); },
+  openHist(id){ selId=id; view='prod'; tab='resumo'; window.scrollTo(0,0); render(); },
+  logout(){ api.logout(); },
+  resetDemo: async()=>{ if(await confirmBox('Restaurar demonstração','Isso volta todos os dados de exemplo ao estado inicial.','Restaurar')) api.reset(); },
+  copy(_,b){ const v=b.dataset.v; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('Link copiado!')).catch(()=>{ const t=document.createElement('textarea'); t.value=v; document.body.appendChild(t); t.select(); try{document.execCommand('copy');toast('Link copiado!')}catch(e){} t.remove(); }); },
+  newFilm(){ filmModal(null); },
+  editFilm(){ filmModal(selFilm()); },
+  editLinks(){ filmModal(selFilm(),true); },
+  toggleMat(area){ const f=selFilm(); const m={...(f.material||{})}; m[area]=!m[area]; run(api.updateFilm(f.id,{material:m,updatedAt:Date.now()})); },
+  async startFilm(){
+    const f=selFilm(), a=activeFilm();
+    if(a && !await confirmBox('Começar este filme agora?',`<b>${esc(a.title)}</b> vai voltar para o topo da fila e <b>${esc(f.title)}</b> passa a ser o filme em edição.`,'Começar agora')) return;
+    if(a){ const min=Math.min(0,...queue().map(x=>x.order||0)); await run(api.updateFilm(a.id,{status:'fila',order:min-1})); }
+    await run(api.updateFilm(f.id,{status:'ativo',startedAt:f.startedAt||Date.now()}),'Filme em edição!');
+  },
+  async concludeFilm(){
+    const f=selFilm(), pend=tasks.filter(t=>t.status!=='concluido').length, next=queue()[0];
+    const txt=`${pend?`<p style="color:var(--amber)">Atenção: ainda há <b>${pend}</b> idioma(s) que não estão como Concluído.</p>`:''}<p><b>${esc(f.title)}</b> vai para o Histórico de filmes concluídos.</p>${next?`<p>O próximo da fila, <b>${esc(next.title)}</b>, passa a ser o filme em edição.</p>`:''}`;
+    if(!await confirmBox('Concluir filme?',txt,'Concluir filme')) return;
+    await run(api.updateFilm(f.id,{status:'concluido',completedAt:Date.now()}));
+    if(next){ await run(api.updateFilm(next.id,{status:'ativo',startedAt:Date.now()})); selId=next.id; }
+    toast('Filme concluído e movido para o histórico!'); render();
+  },
+  async reopenFilm(){
+    const f=selFilm(); if(!await confirmBox('Reabrir filme?',`<b>${esc(f.title)}</b> volta para o topo da fila de produção.`,'Reabrir')) return;
+    const min=Math.min(0,...queue().map(x=>x.order||0));
+    await run(api.updateFilm(f.id,{status:'fila',order:min-1,completedAt:null}),'Filme reaberto.');
+  },
+  async deleteFilm(){
+    const f=selFilm(); if(!await confirmBox('Excluir filme?',`<b>${esc(f.title)}</b> e todas as tarefas dele serão apagados para sempre.`,'Excluir',true)) return;
+    await run(api.deleteFilm(f.id),'Filme excluído.'); selId=null;
+  },
+  moveUp(id){ moveQueue(id,-1); }, moveDown(id){ moveQueue(id,1); },
+  assign(){ assignModal(); },
+  async delTask(id){ const t=tasks.find(x=>x.id===id); if(!await confirmBox('Remover idioma?',`Remover <b>${esc(t.lang)}</b> de ${esc(userName(t.editorUid))}?`,'Remover',true)) return; run(api.deleteTask(selId,id)); },
+  newUser(){ userModal(null); },
+  editUser(id){ userModal(users.find(u=>u.uid===id)); },
+  async delUser(id){ const u=users.find(x=>x.uid===id); if(!await confirmBox('Remover funcionário?',`<b>${esc(u.name)}</b> perde o acesso ao site. As tarefas antigas continuam no histórico com o nome dele.`,'Remover',true)) return; run(api.deleteUser(id),'Funcionário removido.'); },
+  account(){ accountModal(); },
+  async resetUserPw(id){ const u=users.find(x=>x.uid===id); await run(api.resetPassword(u.email),`Link para criar nova senha enviado para ${u.email}.`); },
+};
+function moveQueue(id,dir){
+  const q=queue(), i=q.findIndex(f=>f.id===id), j=i+dir; if(j<0||j>=q.length) return;
+  const a=q[i], b=q[j]; let oa=a.order||0, ob=b.order||0; if(oa===ob) ob=oa+dir;
+  run(Promise.all([api.updateFilm(a.id,{order:ob}),api.updateFilm(b.id,{order:oa})]));
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  if(b.closest('.q-arrows')&&b.parentElement.classList.contains('q-arrows')) e.stopPropagation();
+  const fn=ACT[b.dataset.act]; if(fn){ e.preventDefault(); fn(b.dataset.id,b,e); }
+},true);
+document.addEventListener('input',e=>{ if(e.target.id==='hsearch'){ const v=e.target.value.toLowerCase(); document.querySelectorAll('#hgrid .hist').forEach(c=>c.style.display=c.dataset.title.includes(v)?'':'none'); } });
+document.addEventListener('change',e=>{
+  const el=e.target; if(!el.dataset||!el.dataset.t||!el.dataset.f) return;
+  const t=tasks.find(x=>x.id===el.dataset.t); if(!t) return;
+  const f=el.dataset.f, v=el.value.trim();
+  const p={[f]:v,updatedAt:Date.now(),updatedBy:me.uid};
+  if(f==='status'){ if(v==='fazendo'&&!t.start) p.start=today(); if(v==='concluido'){ if(!t.start) p.start=today(); if(!t.delivery) p.delivery=today(); } }
+  run(api.updateTask(selId,t.id,p));
+});
+
+/* ---------------- modal: filme ---------------- */
+function filmModal(f,limited){
+  const isNew=!f;
+  let poster=f?.poster||'';
+  let links=JSON.parse(JSON.stringify(f?.links||[]));
+  const mat={vocal:false,efeitos:false,musica:false,...(f?.material||{})};
+  const bg=openModal(`
+    <div class="modal-h"><h3 class="display">${isNew?'Adicionar filme':limited?'Links de download':'Editar filme'}</h3><button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-b">
+      ${limited?'':`<div class="poster-edit">
+        <div class="poster" id="fm-prev">${posterHtml({poster,title:f?.title||'?'})}</div>
+        <div style="flex:1">
+          <label class="field"><span>Nome do filme</span><input class="in" id="fm-title" value="${esc(f?.title||'')}" placeholder="Ex.: Homem Aranha - Um Novo Dia"></label>
+          <div class="drop" id="fm-drop">📁 Clique para escolher a foto do filme<br><small>JPG ou PNG — a imagem é ajustada automaticamente</small></div>
+          <input type="file" id="fm-file" accept="image/*" class="hidden">
+          <div style="display:flex;gap:8px;margin-top:8px"><input class="in" id="fm-purl" placeholder="…ou cole o link de uma imagem"><button class="btn sm" id="fm-rm">Remover foto</button></div>
+        </div></div>
+        ${isNew?`<div class="field" style="margin-top:14px"><span>Onde colocar</span><div class="checks" id="fm-where">
+          <span class="check on" data-v="fim">No fim da fila</span><span class="check" data-v="inicio">Como próximo filme</span>${activeFilm()?'':'<span class="check" data-v="ativo">Começar agora</span>'}</div></div>`:''}
+        <div class="field" style="margin-top:6px"><span>Material liberado</span><div class="checks" id="fm-mat">${AREAS.map(a=>`<span class="check ${mat[a.id]?'on':''}" data-v="${a.id}">${a.name}</span>`).join('')}</div></div>`}
+      <label class="field" style="margin-top:6px"><span>Link do Drive (pasta principal dos arquivos)</span><input class="in mono" id="fm-drive" value="${esc(f?.driveLink||'')}" placeholder="https://drive.google.com/drive/folders/…"></label>
+      <div class="field"><span>Outros links de download (ex.: 6_CHANNELS, STEREO) e os idiomas de cada um</span><div id="fm-links"></div>
+        <button class="btn sm" id="fm-addlink" style="align-self:flex-start">+ Adicionar link</button></div>
+    </div>
+    <div class="modal-f"><button class="btn" data-close>Cancelar</button><button class="btn primary" id="fm-save">${isNew?'Adicionar filme':'Salvar'}</button></div>`,{wide:true});
+  bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  const drawLinks=()=>{
+    bg.querySelector('#fm-links').innerHTML=links.map((l,i)=>`<div class="link-edit" data-i="${i}">
+      <div class="top"><input class="in" data-k="label" value="${esc(l.label)}" placeholder="Nome (ex.: STEREO)"><input class="in mono" data-k="url" value="${esc(l.url)}" placeholder="https://…"><button class="icon-btn del" data-rm="${i}">✕</button></div>
+      <input class="in" data-k="langs" value="${esc((l.langs||[]).join(', '))}" placeholder="Idiomas separados por vírgula (ex.: Inglês 5.1, Russo 5.1)"></div>`).join('')||'<div style="color:var(--dim);font-size:13px">Nenhum link extra.</div>';
+    bg.querySelectorAll('.link-edit input').forEach(inp=>inp.oninput=()=>{ const i=+inp.closest('.link-edit').dataset.i, k=inp.dataset.k; links[i][k]=k==='langs'?inp.value.split(',').map(s=>s.trim()).filter(Boolean):inp.value; });
+    bg.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ links.splice(+b.dataset.rm,1); drawLinks(); });
+  };
+  drawLinks();
+  bg.querySelector('#fm-addlink').onclick=()=>{ links.push({label:'',url:'',langs:[]}); drawLinks(); };
+  bg.querySelectorAll('.checks').forEach(g=>g.addEventListener('click',e=>{ const c=e.target.closest('.check'); if(!c) return; if(g.id==='fm-where'){ g.querySelectorAll('.check').forEach(x=>x.classList.remove('on')); c.classList.add('on'); } else c.classList.toggle('on'); }));
+  if(!limited){
+    const prev=()=>bg.querySelector('#fm-prev').innerHTML=posterHtml({poster,title:bg.querySelector('#fm-title').value||'?'});
+    bg.querySelector('#fm-drop').onclick=()=>bg.querySelector('#fm-file').click();
+    bg.querySelector('#fm-file').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; try{ poster=await resizeImage(file); prev(); }catch(err){ toast('Não consegui ler essa imagem.',true); } };
+    bg.querySelector('#fm-purl').onchange=e=>{ poster=e.target.value.trim(); prev(); };
+    bg.querySelector('#fm-rm').onclick=()=>{ poster=''; prev(); };
+  }
+  bg.querySelector('#fm-save').onclick=async()=>{
+    const clean=links.filter(l=>l.url&&l.url.trim()).map(l=>({label:(l.label||'Link').trim(),url:l.url.trim(),langs:l.langs||[]}));
+    const drive=bg.querySelector('#fm-drive').value.trim();
+    if(limited){ await run(api.updateFilm(f.id,{driveLink:drive,links:clean,updatedAt:Date.now()}),'Links salvos.'); closeModal(); return; }
+    const title=bg.querySelector('#fm-title').value.trim(); if(!title){ toast('Digite o nome do filme.',true); return; }
+    const material={}; bg.querySelectorAll('#fm-mat .check').forEach(c=>material[c.dataset.v]=c.classList.contains('on'));
+    const data={title,poster,driveLink:drive,links:clean,material,updatedAt:Date.now()};
+    if(isNew){
+      const where=bg.querySelector('#fm-where .check.on')?.dataset.v||'fim', q=queue();
+      const order=where==='inicio'?Math.min(0,...q.map(x=>x.order||0))-1:Math.max(0,...q.map(x=>x.order||0))+1;
+      const id=await run(api.createFilm({...data,status:where==='ativo'?'ativo':'fila',order,createdAt:Date.now(),startedAt:where==='ativo'?Date.now():null}),'Filme adicionado!');
+      selId=id; view='prod';
+    } else await run(api.updateFilm(f.id,data),'Filme salvo.');
+    closeModal(); render();
+  };
+}
+function resizeImage(file,maxW=360,maxH=540){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onerror=rej; r.onload=()=>{ const img=new Image(); img.onerror=rej; img.onload=()=>{ const s=Math.min(1,maxW/img.width,maxH/img.height); const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',.82)); }; img.src=r.result; }; r.readAsDataURL(file); });
+}
+
+/* ---------------- modal: atribuir idiomas ---------------- */
+function assignModal(){
+  const act=users.filter(u=>u.active!==false);
+  let area=tab==='resumo'?'vocal':tab;
+  const editorsFor=a=>{ const l=act.filter(u=>(u.roles||[]).includes(a)); return l.length?l:act; };
+  const bg=openModal(`
+    <div class="modal-h"><h3 class="display">Atribuir idiomas</h3><button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-b">
+      <div class="field"><span>Área</span><div class="checks" id="as-area">${AREAS.map(a=>`<span class="check ${a.id===area?'on':''}" data-v="${a.id}">${a.name}</span>`).join('')}</div></div>
+      <div class="row2"><label class="field"><span>Editor</span><select class="in" id="as-ed"></select></label>
+        <label class="field"><span>Revisor</span><select class="in" id="as-rv"><option value="">— sem revisor —</option>${act.filter(u=>(u.roles||[]).includes('revisor')).map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join('')}</select></label></div>
+      <div class="row2"><label class="field"><span>Início</span><input type="date" class="in" id="as-start"></label>
+        <label class="field"><span>Entrega</span><input type="date" class="in" id="as-del"></label></div>
+      <label class="field"><span>Urgência</span><select class="in" id="as-urg">${Object.entries(URG).map(([k,v])=>`<option value="${k}" ${k==='media'?'selected':''}>${v}</option>`).join('')}</select></label>
+      <label class="field"><span>Idiomas — um por linha, do jeito que você quiser (ex.: Inglês 5.1)</span>
+        <textarea class="in" id="as-langs" rows="5" placeholder="Inglês 5.1&#10;Russo 5.1"></textarea></label>
+    </div>
+    <div class="modal-f"><button class="btn" data-close>Cancelar</button><button class="btn primary" id="as-save">Atribuir</button></div>`);
+  bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  const fillEd=()=>{ const l=editorsFor(area); bg.querySelector('#as-ed').innerHTML=l.length?l.map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join(''):'<option value="">— cadastre funcionários na Equipe —</option>'; };
+  fillEd();
+  bg.querySelector('#as-area').onclick=e=>{ const c=e.target.closest('.check'); if(!c) return; area=c.dataset.v; bg.querySelectorAll('#as-area .check').forEach(x=>x.classList.toggle('on',x===c)); fillEd(); };
+  bg.querySelector('#as-save').onclick=async()=>{
+    const names=bg.querySelector('#as-langs').value.split(/\n|,/).map(x=>x.trim()).filter(Boolean);
+    const editorUid=bg.querySelector('#as-ed').value;
+    if(!editorUid){ toast('Escolha o editor.',true); return; }
+    if(!names.length){ toast('Digite pelo menos um idioma.',true); return; }
+    const base=Date.now(), start=bg.querySelector('#as-start').value, delivery=bg.querySelector('#as-del').value;
+    const list=names.map((lang,i)=>({area,editorUid,lang,reviewerUid:bg.querySelector('#as-rv').value,urgency:bg.querySelector('#as-urg').value,status:'pendente',reviewStatus:'pendente',start,delivery,order:base+i,createdAt:base}));
+    await run(api.addTasks(selId,list),`${list.length} idioma(s) atribuído(s) a ${userName(editorUid)}.`);
+    tab=area; closeModal(); render();
+  };
+}
+
+/* ---------------- modal: funcionário ---------------- */
+function userModal(u){
+  const isNew=!u; const sel=new Set(u?.roles||[]);
+  const bg=openModal(`
+    <div class="modal-h"><h3 class="display">${isNew?'Novo funcionário':'Editar funcionário'}</h3><button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-b">
+      <label class="field"><span>Nome</span><input class="in" id="um-name" value="${esc(u?.name||'')}" placeholder="Ex.: Hygor"></label>
+      <label class="field"><span>E-mail (é o login dele)</span><input class="in" id="um-email" type="email" value="${esc(u?.email||'')}" ${isNew?'':'disabled'}></label>
+      ${isNew?`<label class="field"><span>Senha de uso único (no primeiro acesso a pessoa cria a senha dela)</span><input class="in" id="um-pass" type="text" placeholder="mínimo 6 caracteres"></label>`:''}
+      <div class="field"><span>O que essa pessoa faz? (pode marcar mais de um)</span><div class="checks" id="um-roles">${Object.entries(ROLES).map(([k,v])=>`<span class="check ${sel.has(k)?'on':''}" data-v="${k}">${v}</span>`).join('')}</div></div>
+      ${isNew?'':`<div class="field"><span>Situação</span><div class="checks" id="um-active"><span class="check ${u.active!==false?'on':''}" data-v="1">Ativo</span><span class="check ${u.active===false?'on':''}" data-v="0">Desativado (não consegue entrar)</span></div></div>`}
+    </div>
+    <div class="modal-f"><button class="btn" data-close>Cancelar</button><button class="btn primary" id="um-save">${isNew?'Cadastrar':'Salvar'}</button></div>`);
+  bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  bg.querySelector('#um-roles').onclick=e=>{ const c=e.target.closest('.check'); if(!c) return; c.classList.toggle('on'); };
+  bg.querySelector('#um-active')?.addEventListener('click',e=>{ const c=e.target.closest('.check'); if(!c) return; bg.querySelectorAll('#um-active .check').forEach(x=>x.classList.toggle('on',x===c)); });
+  bg.querySelector('#um-save').onclick=async()=>{
+    const name=bg.querySelector('#um-name').value.trim(), roles=[...bg.querySelectorAll('#um-roles .check.on')].map(c=>c.dataset.v);
+    if(!name){ toast('Digite o nome.',true); return; }
+    if(!roles.length){ toast('Marque pelo menos um cargo.',true); return; }
+    const btn=bg.querySelector('#um-save'); btn.disabled=true;
+    try{
+      if(isNew){
+        const email=bg.querySelector('#um-email').value.trim(), password=bg.querySelector('#um-pass').value;
+        if(!email){ toast('Digite o e-mail.',true); btn.disabled=false; return; }
+        if(!api.demo&&password.length<6){ toast('A senha precisa ter pelo menos 6 caracteres.',true); btn.disabled=false; return; }
+        await run(api.createUser({name,email,password,roles}),`${name} cadastrado!`);
+      } else {
+        const active=bg.querySelector('#um-active .check.on')?.dataset.v!=='0';
+        await run(api.updateUser(u.uid,{name,roles,active}),'Funcionário salvo.');
+      }
+      closeModal();
+    }catch(e){ btn.disabled=false; }
+  };
+}
+
+/* ---------------- modal: minha conta ---------------- */
+function accountModal(){
+  const bg=openModal(`
+    <div class="modal-h"><h3 class="display">Minha conta</h3><button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-b">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px"><div class="avatar" style="width:44px;height:44px">${esc(initials(me.name))}</div><div><b>${esc(me.name)}</b><div class="mono" style="font-size:12px;color:var(--muted)">${esc(me.email)}</div><div>${(isAdmin()&&!roles().includes('admin')?['admin']:roles()).map(r=>`<span class="role-tag">${ROLES[r]}</span>`).join('')}</div></div></div>
+      ${api.demo?'<div style="color:var(--muted)">No modo demonstração não há senha.</div>':`
+      <div class="label" style="margin-bottom:10px">Trocar senha</div>
+      <label class="field"><span>Senha atual</span><input class="in" type="password" id="ac-cur"></label>
+      <label class="field"><span>Nova senha</span><input class="in" type="password" id="ac-new" placeholder="mínimo 6 caracteres"></label>`}
+    </div>
+    <div class="modal-f"><button class="btn" data-close>Fechar</button>${api.demo?'':'<button class="btn primary" id="ac-save">Trocar senha</button>'}</div>`);
+  bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  bg.querySelector('#ac-save')?.addEventListener('click',async()=>{
+    const c=bg.querySelector('#ac-cur').value, n=bg.querySelector('#ac-new').value;
+    if(n.length<6){ toast('A nova senha precisa ter pelo menos 6 caracteres.',true); return; }
+    try{ await api.changePassword(c,n); toast('Senha trocada!'); closeModal(); }catch(e){ toast(traduz(e),true); }
+  });
+}
+
+/* =====================================================================
+   INÍCIO
+   ===================================================================== */
+(async()=>{
+  try{ api=FIREBASE_CONFIG?await makeFirebaseApi(FIREBASE_CONFIG):makeDemoApi(); }
+  catch(e){ console.error(e); $('#boot').textContent='Não foi possível conectar ao banco de dados. Verifique sua internet e recarregue a página.'; return; }
+  let started=false;
+  api.onAuth(p=>{
+    if(!p){ me=null; started=false; stopData(); tab=null; view='prod'; closeModal(); renderLogin(); return; }
+    if(p.noProfile){ me=null; started=false; stopData(); renderBlocked('Sua conta não está cadastrada na equipe. Fale com o administrador.'); return; }
+    const owner=(p.email||'').toLowerCase()===OWNER_EMAIL;
+    if(p.active===false&&!owner){ me=null; started=false; stopData(); renderBlocked('Sua conta foi desativada pelo administrador.'); return; }
+    if(p.mustChangePassword&&!owner){ me=null; started=false; stopData(); renderFirstPassword(p); return; }
+    me=p;
+    if(!started){ started=true; startData(); }
+    render();
+  });
+})();
+</script>
+</body>
+</html>
