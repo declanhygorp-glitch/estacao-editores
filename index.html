@@ -304,6 +304,8 @@ const today = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimez
 const fmtTs = ts => ts ? new Date(ts).toLocaleDateString('pt-BR') : '—';
 const fmtD = s => s ? s.split('-').reverse().join('/') : '—';
 const initials = n => (n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const normUser = u => String(u||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'.').replace(/[^a-z0-9._-]/g,'');
+const fakeEmail = u => `${u}-${Math.random().toString(36).slice(2,7)}@estacao-editores.firebaseapp.com`;
 const uidGen = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
 const store = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 function flagCode(lang){ const base=String(lang||'').replace(/\s*(5\.1|2\.0|7\.1|stereo|est[ée]reo)\s*$/i,'').trim().toLowerCase(); const f=LANGS.find(l=>l[0].toLowerCase()===base); return f?f[1]:null; }
@@ -317,13 +319,13 @@ function posterHtml(f){ return f.poster ? `<img src="${esc(f.poster)}" alt="">` 
 function seedDemo(){
   const now=Date.now();
   return {
-    users:[{uid:'u_admin',name:'Administrador',email:OWNER_EMAIL,roles:['admin'],active:true}],
+    users:[{uid:'u_admin',name:'Administrador',username:'admin',email:OWNER_EMAIL,roles:['admin'],active:true}],
     films:[{id:'f1',title:'Superbad',status:'ativo',order:1,createdAt:now,startedAt:now,poster:'',driveLink:'',links:[],material:{vocal:false,efeitos:false,musica:false}}],
     tasks:{f1:[]},
   };
 }
 function makeDemoApi(){
-  const KEY='estacao-editores-demo-v2';
+  const KEY='estacao-editores-demo-v3';
   let s=store.get(KEY,null)||seedDemo();
   const L={users:new Set(),films:new Set(),tasks:new Map(),auth:null};
   const clone=o=>JSON.parse(JSON.stringify(o));
@@ -351,7 +353,9 @@ function makeDemoApi(){
     addTasks(fid,list){ s.tasks[fid]=s.tasks[fid]||[]; list.forEach(t=>s.tasks[fid].push({id:uidGen(),...t})); save(); emitT(fid); return ok(); },
     updateTask(fid,tid,p){ Object.assign((s.tasks[fid]||[]).find(x=>x.id===tid),p); save(); emitT(fid); return ok(); },
     deleteTask(fid,tid){ s.tasks[fid]=(s.tasks[fid]||[]).filter(x=>x.id!==tid); save(); emitT(fid); return ok(); },
-    createUser({name,email,roles}){ if(s.users.some(u=>u.email.toLowerCase()===email.toLowerCase())) return Promise.reject(new Error('Esse e-mail já está cadastrado.')); s.users.push({uid:uidGen(),name,email,roles,active:true,mustChangePassword:true}); save(); emitU(); return ok(); },
+    createUser({name,username,roles}){ if(s.users.some(u=>u.username===username)) return Promise.reject(new Error('Esse nome de usuário já existe.')); s.users.push({uid:uidGen(),name,username,email:fakeEmail(username),roles,active:true,mustChangePassword:true}); save(); emitU(); return ok(); },
+    changeUsername(u,nu){ if(s.users.some(x=>x.username===nu&&x.uid!==u.uid)) return Promise.reject(new Error('Esse nome de usuário já existe.')); Object.assign(s.users.find(x=>x.uid===u.uid),{username:nu}); save(); emitU(); return ok(); },
+    resetUserPassword(u){ Object.assign(s.users.find(x=>x.uid===u.uid),{mustChangePassword:true}); save(); emitU(); return ok(); },
     updateUser(uid,p){ Object.assign(s.users.find(u=>u.uid===uid),p); save(); emitU(); emitMe(); return ok(); },
     deleteUser(uid){ s.users=s.users.filter(u=>u.uid!==uid); save(); emitU(); return ok(); },
     setFirstPassword(uid){ Object.assign(s.users.find(u=>u.uid===uid),{mustChangePassword:false}); save(); emitU(); emitMe(); return ok(); },
@@ -383,7 +387,11 @@ async function makeFirebaseApi(cfg){
         },err=>cb({uid:u.uid,email:u.email,noProfile:true,error:err.message}));
       });
     },
-    login:(e,p)=>AU.signInWithEmailAndPassword(auth,e,p),
+    async login(id,p){
+      let email=id.trim();
+      if(!email.includes('@')){ const snap=await FS.getDoc(FS.doc(db,'usernames',normUser(email))); if(!snap.exists()) throw {code:'auth/invalid-credential'}; email=snap.data().email; }
+      return AU.signInWithEmailAndPassword(auth,email,p);
+    },
     ownerSignup(e,p){ if(e.trim().toLowerCase()!==OWNER_EMAIL) return Promise.reject(new Error('Esse botão é só para o e-mail do administrador principal.')); return AU.createUserWithEmailAndPassword(auth,e.trim(),p); },
     logout:()=>AU.signOut(auth),
     resetPassword:e=>AU.sendPasswordResetEmail(auth,e),
@@ -397,15 +405,38 @@ async function makeFirebaseApi(cfg){
     async addTasks(fid,arr){ const b=FS.writeBatch(db); arr.forEach(t=>b.set(FS.doc(FS.collection(db,'films',fid,'tasks')),t)); await b.commit(); },
     updateTask:(fid,tid,p)=>FS.updateDoc(FS.doc(db,'films',fid,'tasks',tid),p),
     deleteTask:(fid,tid)=>FS.deleteDoc(FS.doc(db,'films',fid,'tasks',tid)),
-    async createUser({name,email,password,roles}){
+    async createUser({name,username,password,roles}){
+      if((await FS.getDoc(FS.doc(db,'usernames',username))).exists()) throw new Error('Esse nome de usuário já existe.');
       const sec=A.getApps().find(a=>a.name==='sec')||A.initializeApp(cfg,'sec');
-      const sa=AU.getAuth(sec);
+      const sa=AU.getAuth(sec), email=fakeEmail(username);
       const c=await AU.createUserWithEmailAndPassword(sa,email,password);
-      await FS.setDoc(FS.doc(db,'users',c.user.uid),{name,email,roles,active:true,mustChangePassword:true,createdAt:Date.now()});
+      await FS.setDoc(FS.doc(db,'users',c.user.uid),{name,username,email,roles,active:true,mustChangePassword:true,createdAt:Date.now()});
+      await FS.setDoc(FS.doc(db,'usernames',username),{email,uid:c.user.uid});
       await AU.signOut(sa);
     },
+    async changeUsername(u,nu){
+      const ex=await FS.getDoc(FS.doc(db,'usernames',nu)); if(ex.exists()&&ex.data().uid!==u.uid) throw new Error('Esse nome de usuário já existe.');
+      await FS.setDoc(FS.doc(db,'usernames',nu),{email:u.email,uid:u.uid});
+      if(u.username&&u.username!==nu) await FS.deleteDoc(FS.doc(db,'usernames',u.username));
+      await FS.updateDoc(FS.doc(db,'users',u.uid),{username:nu});
+    },
+    async resetUserPassword(u,password,filmIds){
+      // cria um novo acesso com a senha de uso único e passa todas as tarefas da pessoa para ele
+      const sec=A.getApps().find(a=>a.name==='sec')||A.initializeApp(cfg,'sec');
+      const sa=AU.getAuth(sec), email=fakeEmail(u.username);
+      const c=await AU.createUserWithEmailAndPassword(sa,email,password); await AU.signOut(sa);
+      const nu=c.user.uid, data={...u}; delete data.uid;
+      await FS.setDoc(FS.doc(db,'users',nu),{...data,email,mustChangePassword:true,active:true});
+      await FS.setDoc(FS.doc(db,'usernames',u.username),{email,uid:nu});
+      for(const fid of filmIds){
+        const q=await FS.getDocs(FS.collection(db,'films',fid,'tasks')); const b=FS.writeBatch(db); let n=0;
+        q.forEach(d=>{ const t=d.data(), p={}; if(t.editorUid===u.uid) p.editorUid=nu; if(t.reviewerUid===u.uid) p.reviewerUid=nu; if(Object.keys(p).length){ b.update(d.ref,p); n++; } });
+        if(n) await b.commit();
+      }
+      await FS.deleteDoc(FS.doc(db,'users',u.uid));
+    },
     updateUser:(uid,p)=>FS.updateDoc(FS.doc(db,'users',uid),p),
-    deleteUser:uid=>FS.deleteDoc(FS.doc(db,'users',uid)),
+    async deleteUser(uid){ const u=users.find(x=>x.uid===uid); if(u&&u.username) await FS.deleteDoc(FS.doc(db,'usernames',u.username)); await FS.deleteDoc(FS.doc(db,'users',uid)); },
     async setFirstPassword(uid,pw){ await AU.updatePassword(auth.currentUser,pw); await FS.updateDoc(FS.doc(db,'users',uid),{mustChangePassword:false}); },
   };
 }
@@ -437,7 +468,7 @@ async function run(p,okMsg){
 }
 function traduz(e){
   const c=(e&&e.code)||'', m=(e&&e.message)||String(e);
-  const map={'auth/invalid-credential':'E-mail ou senha incorretos.','auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Usuário não encontrado.','auth/email-already-in-use':'Esse e-mail já está cadastrado.','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/invalid-email':'E-mail inválido.','auth/too-many-requests':'Muitas tentativas. Espere um pouco.','permission-denied':'Você não tem permissão para isso.','auth/requires-recent-login':'Entre de novo para trocar a senha.'};
+  const map={'auth/invalid-credential':'Usuário ou senha incorretos.','auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Usuário ou senha incorretos.','auth/email-already-in-use':'Esse e-mail já está cadastrado.','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/invalid-email':'E-mail inválido.','auth/too-many-requests':'Muitas tentativas. Espere um pouco.','permission-denied':'Você não tem permissão para isso.','auth/requires-recent-login':'Entre de novo para trocar a senha.'};
   return map[c]||m;
 }
 function toast(msg,bad){ const t=document.createElement('div'); t.className='toast'+(bad?' bad':''); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); }
@@ -467,15 +498,15 @@ function renderLogin(msg){
   </div>
   <div class="login-box"><div class="login-card">
     <div class="brand"><div class="brand-logo">${clapIcon()}</div><div><div class="display" style="font-size:20px">Estação de Editores</div><div style="font-size:12px;color:var(--muted)">Vocal · Efeitos · Música</div></div></div>
-    <h2 class="display">Entrar</h2><p class="sub">Use o e-mail e a senha que o administrador cadastrou para você.</p>
+    <h2 class="display">Entrar</h2><p class="sub">Use o nome de usuário e a senha que o administrador cadastrou para você.</p>
     ${demo?'':`
     <form id="lf">
-      <label class="field"><span>E-mail</span><input class="in" id="le" type="email" autocomplete="username" required></label>
+      <label class="field"><span>Usuário</span><input class="in" id="le" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
       <label class="field"><span>Senha</span><input class="in" id="lp" type="password" autocomplete="current-password" required></label>
       <div class="err" id="lerr">${esc(msg||'')}</div>
       <button class="btn primary" style="width:100%;justify-content:center;padding:11px" id="lb">Entrar</button>
-      <div style="text-align:center;margin-top:14px"><a href="#" id="forgot" style="font-size:13px">Esqueci minha senha</a></div>
-      <div style="text-align:center;margin-top:8px"><a href="#" id="ownerFirst" style="font-size:12px;color:var(--dim)">Primeiro acesso do administrador principal</a></div>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted)">Esqueceu a senha? Fale com o administrador.</div>
+      <div style="text-align:center;margin-top:8px"><a href="#" id="ownerFirst" style="font-size:12px;color:var(--dim)">Primeiro acesso do administrador principal (use seu e-mail)</a></div>
     </form>`}
     ${demo?`<div class="demo-box"><div class="label" style="color:var(--amber)">Modo demonstração</div>
       <div style="font-size:13px;color:var(--muted);margin-top:6px">O banco de dados ainda não foi conectado. Escolha uma pessoa para ver o site como ela vê:</div>
@@ -487,8 +518,6 @@ function renderLogin(msg){
   $('#ownerFirst').onclick=async e=>{ e.preventDefault(); const em=$('#le').value.trim(), pw=$('#lp').value;
     if(!em||pw.length<6){ $('#lerr').textContent='Digite seu e-mail e a senha que você quer usar (mínimo 6 caracteres) e clique de novo.'; return; }
     try{ await api.ownerSignup(em,pw); }catch(err){ $('#lerr').textContent=traduz(err); } };
-  $('#forgot').onclick=async e=>{ e.preventDefault(); const em=$('#le').value.trim(); if(!em){ $('#lerr').textContent='Digite seu e-mail acima primeiro.'; return; }
-    try{ await api.resetPassword(em); $('#lerr').style.color='var(--accent)'; $('#lerr').textContent='Enviamos um link para redefinir a senha no seu e-mail.'; }catch(err){ $('#lerr').textContent=traduz(err); } };
 }
 function renderBlocked(text){
   $('#boot').classList.add('hidden'); $('#app').classList.add('hidden');
@@ -560,7 +589,7 @@ function render(){
     ${api.demo?`<span class="demo-flag" data-act="resetDemo" title="Clique para restaurar os dados de exemplo">MODO DEMO · restaurar</span>`:''}
     <span class="saved" id="saved">● Alterações salvas</span>
     <div class="theme"><button class="${theme==='dark'?'on':''}" data-act="theme" data-id="dark">Dark</button><button class="${theme==='light'?'on':''}" data-act="theme" data-id="light">White</button></div>
-    <div class="me" data-act="account" title="Minha conta"><div class="avatar">${esc(initials(me.name))}</div><div><div class="nm">${esc(me.name||me.email)}</div><div class="rl">${esc(roleTxt)}</div></div></div>
+    <div class="me" data-act="account" title="Minha conta"><div class="avatar">${esc(initials(me.name))}</div><div><div class="nm">${esc(me.name||me.username||'')}</div><div class="rl">${esc(roleTxt)}</div></div></div>
     <button class="btn sm" data-act="logout">Sair</button>
   </header>
   <div class="layout">
@@ -716,12 +745,12 @@ function teamView(){
   const list=[...users].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   return `<div class="page-h"><div><h2 class="display">Equipe</h2><p>Cadastre funcionários e sócios e defina o que cada um faz. Uma pessoa pode ter mais de um cargo. No primeiro acesso, cada um troca a senha de uso único pela senha pessoal.</p></div>
     <button class="btn primary" data-act="newUser">+ Novo funcionário</button></div>
-  <div class="card"><div class="tbl-wrap"><table style="min-width:760px"><thead><tr><th>Nome</th><th>E-mail</th><th>Cargos</th><th>Situação</th><th></th></tr></thead><tbody>
+  <div class="card"><div class="tbl-wrap"><table style="min-width:760px"><thead><tr><th>Nome</th><th>Usuário</th><th>Cargos</th><th>Situação</th><th></th></tr></thead><tbody>
   ${list.map(u=>`<tr><td><div style="display:flex;gap:10px;align-items:center"><div class="avatar">${esc(initials(u.name))}</div><b>${esc(u.name)}</b></div></td>
-    <td class="mono" style="font-size:12.5px">${esc(u.email)}</td>
+    <td class="mono" style="font-size:12.5px">${u.username?'@'+esc(u.username):(u.email&&!u.email.endsWith('estacao-editores.firebaseapp.com')?esc(u.email):'—')}</td>
     <td>${(u.roles||[]).map(r=>`<span class="role-tag ${r==='admin'?'admin':''}">${ROLES[r]||r}</span>`).join('')||'<span style="color:var(--dim)">—</span>'}</td>
     <td><span class="status-dot ${u.active===false?'off':''}"><i></i>${u.active===false?'Desativado':'Ativo'}</span></td>
-    <td style="text-align:right;white-space:nowrap">${api.demo?'':`<button class="btn sm" data-act="resetUserPw" data-id="${u.uid}" title="Envia um e-mail para a pessoa criar uma senha nova">Link de senha</button> `}<button class="btn sm" data-act="editUser" data-id="${u.uid}">Editar</button> ${u.uid!==me.uid?`<button class="btn sm danger" data-act="delUser" data-id="${u.uid}">Remover</button>`:''}</td></tr>`).join('')}
+    <td style="text-align:right;white-space:nowrap">${u.uid!==me.uid?`<button class="btn sm" data-act="resetUserPw" data-id="${u.uid}" title="Gera uma nova senha de uso único">Nova senha</button> `:''}<button class="btn sm" data-act="editUser" data-id="${u.uid}">Editar</button> ${u.uid!==me.uid?`<button class="btn sm danger" data-act="delUser" data-id="${u.uid}">Remover</button>`:''}</td></tr>`).join('')}
   </tbody></table></div></div>`;
 }
 
@@ -783,7 +812,7 @@ const ACT={
   editUser(id){ userModal(users.find(u=>u.uid===id)); },
   async delUser(id){ const u=users.find(x=>x.uid===id); if(!await confirmBox('Remover funcionário?',`<b>${esc(u.name)}</b> perde o acesso ao site. As tarefas antigas continuam no histórico com o nome dele.`,'Remover',true)) return; run(api.deleteUser(id),'Funcionário removido.'); },
   account(){ accountModal(); },
-  async resetUserPw(id){ const u=users.find(x=>x.uid===id); await run(api.resetPassword(u.email),`Link para criar nova senha enviado para ${u.email}.`); },
+  resetUserPw(id){ resetPwModal(users.find(x=>x.uid===id)); },
 };
 function moveQueue(id,dir){
   const q=queue(), i=q.findIndex(f=>f.id===id), j=i+dir; if(j<0||j>=q.length) return;
@@ -910,7 +939,7 @@ function userModal(u){
     <div class="modal-h"><h3 class="display">${isNew?'Novo funcionário':'Editar funcionário'}</h3><button class="icon-btn" data-close>✕</button></div>
     <div class="modal-b">
       <label class="field"><span>Nome</span><input class="in" id="um-name" value="${esc(u?.name||'')}" placeholder="Ex.: Hygor"></label>
-      <label class="field"><span>E-mail (é o login dele)</span><input class="in" id="um-email" type="email" value="${esc(u?.email||'')}" ${isNew?'':'disabled'}></label>
+      <label class="field"><span>Nome de usuário (é o login, sem espaços — ex.: hygor)</span><input class="in mono" id="um-user" autocapitalize="none" spellcheck="false" value="${esc(u?.username||'')}"></label>
       ${isNew?`<label class="field"><span>Senha de uso único (no primeiro acesso a pessoa cria a senha dela)</span><input class="in" id="um-pass" type="text" placeholder="mínimo 6 caracteres"></label>`:''}
       <div class="field"><span>O que essa pessoa faz? (pode marcar mais de um)</span><div class="checks" id="um-roles">${Object.entries(ROLES).map(([k,v])=>`<span class="check ${sel.has(k)?'on':''}" data-v="${k}">${v}</span>`).join('')}</div></div>
       ${isNew?'':`<div class="field"><span>Situação</span><div class="checks" id="um-active"><span class="check ${u.active!==false?'on':''}" data-v="1">Ativo</span><span class="check ${u.active===false?'on':''}" data-v="0">Desativado (não consegue entrar)</span></div></div>`}
@@ -926,12 +955,14 @@ function userModal(u){
     const btn=bg.querySelector('#um-save'); btn.disabled=true;
     try{
       if(isNew){
-        const email=bg.querySelector('#um-email').value.trim(), password=bg.querySelector('#um-pass').value;
-        if(!email){ toast('Digite o e-mail.',true); btn.disabled=false; return; }
+        const username=normUser(bg.querySelector('#um-user').value), password=bg.querySelector('#um-pass').value;
+        if(username.length<3){ toast('O nome de usuário precisa ter pelo menos 3 letras.',true); btn.disabled=false; return; }
         if(!api.demo&&password.length<6){ toast('A senha precisa ter pelo menos 6 caracteres.',true); btn.disabled=false; return; }
-        await run(api.createUser({name,email,password,roles}),`${name} cadastrado!`);
+        await run(api.createUser({name,username,password,roles}),`${name} cadastrado! Login: ${username}`);
       } else {
         const active=bg.querySelector('#um-active .check.on')?.dataset.v!=='0';
+        const nu=normUser(bg.querySelector('#um-user').value);
+        if(nu&&nu!==u.username){ if(nu.length<3){ toast('O nome de usuário precisa ter pelo menos 3 letras.',true); btn.disabled=false; return; } await run(api.changeUsername(u,nu)); }
         await run(api.updateUser(u.uid,{name,roles,active}),'Funcionário salvo.');
       }
       closeModal();
@@ -939,12 +970,26 @@ function userModal(u){
   };
 }
 
+/* ---------------- modal: nova senha ---------------- */
+function resetPwModal(u){
+  const bg=openModal(`<div class="modal-h"><h3 class="display">Nova senha</h3><button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-b"><p style="margin-top:0">Crie uma nova senha de uso único para <b>${esc(u.name)}</b>${u.username?` (@${esc(u.username)})`:''}. No próximo acesso a pessoa cria a senha dela. As tarefas dela continuam iguais.</p>
+      ${u.username?`<label class="field"><span>Senha de uso único</span><input class="in" id="rp-pass" type="text" placeholder="mínimo 6 caracteres"></label>`:'<p style="color:var(--amber)">Essa pessoa não tem nome de usuário. Edite o cadastro e defina um antes.</p>'}</div>
+    <div class="modal-f"><button class="btn" data-close>Cancelar</button>${u.username?'<button class="btn primary" id="rp-ok">Gerar nova senha</button>':''}</div>`);
+  bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  bg.querySelector('#rp-ok')?.addEventListener('click',async()=>{
+    const pw=bg.querySelector('#rp-pass').value; if(!api.demo&&pw.length<6){ toast('A senha precisa ter pelo menos 6 caracteres.',true); return; }
+    bg.querySelector('#rp-ok').disabled=true;
+    try{ await run(api.resetUserPassword(u,pw,films.map(f=>f.id)),`Nova senha criada para @${u.username}.`); closeModal(); }catch(e){ bg.querySelector('#rp-ok').disabled=false; }
+  });
+}
+
 /* ---------------- modal: minha conta ---------------- */
 function accountModal(){
   const bg=openModal(`
     <div class="modal-h"><h3 class="display">Minha conta</h3><button class="icon-btn" data-close>✕</button></div>
     <div class="modal-b">
-      <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px"><div class="avatar" style="width:44px;height:44px">${esc(initials(me.name))}</div><div><b>${esc(me.name)}</b><div class="mono" style="font-size:12px;color:var(--muted)">${esc(me.email)}</div><div>${(isAdmin()&&!roles().includes('admin')?['admin']:roles()).map(r=>`<span class="role-tag">${ROLES[r]}</span>`).join('')}</div></div></div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px"><div class="avatar" style="width:44px;height:44px">${esc(initials(me.name))}</div><div><b>${esc(me.name)}</b><div class="mono" style="font-size:12px;color:var(--muted)">${me.username?'@'+esc(me.username):esc(me.email||'')}</div><div>${(isAdmin()&&!roles().includes('admin')?['admin']:roles()).map(r=>`<span class="role-tag">${ROLES[r]}</span>`).join('')}</div></div></div>
       ${api.demo?'<div style="color:var(--muted)">No modo demonstração não há senha.</div>':`
       <div class="label" style="margin-bottom:10px">Trocar senha</div>
       <label class="field"><span>Senha atual</span><input class="in" type="password" id="ac-cur"></label>
