@@ -606,12 +606,12 @@ function clapIcon(){ return `<span class="z">Z</span>`; }
 function startData(){
   unsubs.forEach(u=>u()); unsubs=[];
   unsubs.push(api.watchUsers(u=>{ users=u; render(); }));
-  if(isAdmin()){ unsubs.push(api.watchFinance(m=>{ finance=m; if(view==='finance') render(); })); unsubs.push(api.watchFixed(l=>{ fixed=l; if(view==='finance') render(); })); }
+  if(isAdmin()){ unsubs.push(api.watchFinance(m=>{ finance=m; if(view==='finance') scheduleRender(); })); unsubs.push(api.watchFixed(l=>{ fixed=l; if(view==='finance') scheduleRender(); })); }
   let firstFilms=true;
   unsubs.push(api.watchFilms(f=>{ films=f;
     if(firstFilms){ firstFilms=false; if(!api.demo&&isAdmin()&&!f.length&&!store.get('ee-seeded-superbad',false)){ store.set('ee-seeded-superbad',true); api.createFilm({title:'Superbad',status:'ativo',order:1,createdAt:Date.now(),startedAt:Date.now(),poster:'',driveLink:'',links:[],material:{vocal:false,efeitos:false,musica:false}}); } } if(!selId||!films.some(x=>x.id===selId)) selId=(activeFilm()||queue()[0]||{}).id||null; render(); }));
 }
-function stopData(){ unsubs.forEach(u=>u()); unsubs=[]; if(unsubTasks){unsubTasks();unsubTasks=null;} tasksFor=null; users=[];films=[];tasks=[];selId=null; }
+function stopData(){ stopFinSubs(); unsubs.forEach(u=>u()); unsubs=[]; if(unsubTasks){unsubTasks();unsubTasks=null;} tasksFor=null; users=[];films=[];tasks=[];selId=null; }
 function ensureTasks(){
   if(tasksFor===selId) return;
   if(unsubTasks){unsubTasks();unsubTasks=null;}
@@ -622,7 +622,7 @@ function defaultTab(){ const r=AREAS.find(a=>has(a.id)); return r?r.id:'vocal'; 
 
 function render(){
   if(!me) return;
-  ensureTasks();
+  ensureTasks(); ensureFinSubs();
   if(!tab) tab=defaultTab();
   if(view!=='prod' && !(isAdmin()||(view==='history'&&canManage()))) view='prod';
   $('#login').classList.add('hidden'); $('#boot').classList.add('hidden');
@@ -796,10 +796,25 @@ function resumoView(){
 /* ---------------- financeiro ---------------- */
 const finDoc = fid => finance[fid] || {items:[]};
 const filmMonth = f => (finance[f.id]&&finance[f.id].month) || monthOf(f.startedAt||f.createdAt);
+const PRICE_AREAS = {vocal:'Vocal (por idioma)',efeitos:'Efeitos (por tarefa)',musica:'Música (por tarefa)',revisao:'Revisão (por idioma revisado)'};
+const defaultPrices = () => ({vocal:0,efeitos:0,musica:0,revisao:0,...((finance._prices||{}).prices||{})});
+const filmPrices = fid => { const d=defaultPrices(), o=finDoc(fid).prices||{}; Object.keys(o).forEach(k=>{ if(o[k]!==''&&o[k]!=null) d[k]=num(o[k]); }); return d; };
+const normTxt = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s*(5\.1|2\.0|7\.1)\s*/g,'').trim();
+// linhas automáticas: vêm da Produção (quem editou cada idioma e quem revisou)
+function filmLines(fid){
+  const P=filmPrices(fid), saved=finDoc(fid).lines||{}, out=[];
+  [...(allTasks[fid]||[])].sort((a,b)=>(a.area>b.area?1:a.area<b.area?-1:0)||userName(a.editorUid).localeCompare(userName(b.editorUid))||(a.order||0)-(b.order||0)).forEach(t=>{
+    if(t.editorUid) out.push({key:t.id+':e',cat:t.area,uid:t.editorUid,desc:t.lang,def:num(P[t.area])});
+    if(t.reviewerUid) out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid,desc:'Revisão · '+t.lang,def:num(P.revisao)});
+  });
+  return out.map(l=>{ const o=saved[l.key]||{}, has=o.amount!=null&&o.amount!==''; return {...l,amount:has?num(o.amount):l.def,custom:has&&num(o.amount)!==l.def,paid:!!o.paid}; });
+}
+const filmExtras = fid => (finDoc(fid).items||[]).map(i=>({...i,amount:i.amount!=null?num(i.amount):num(i.actual||i.planned)}));
 function filmTotals(fid){
   const t={planned:0,actual:0,paid:0,byCat:{}};
   Object.keys(CATS).forEach(c=>t.byCat[c]={planned:0,actual:0});
-  (finDoc(fid).items||[]).forEach(i=>{ const c=t.byCat[i.cat]||t.byCat.outros; c.planned+=num(i.planned); c.actual+=num(i.actual); t.planned+=num(i.planned); t.actual+=num(i.actual); if(i.paid) t.paid+=num(i.actual); });
+  filmLines(fid).forEach(l=>{ const c=t.byCat[l.cat]||t.byCat.outros; c.planned+=l.def; c.actual+=l.amount; t.planned+=l.def; t.actual+=l.amount; if(l.paid) t.paid+=l.amount; });
+  filmExtras(fid).forEach(i=>{ const c=t.byCat[i.cat]||t.byCat.outros; c.planned+=i.amount; c.actual+=i.amount; t.planned+=i.amount; t.actual+=i.amount; if(i.paid) t.paid+=i.amount; });
   const b=num(finDoc(fid).budget); t.budget=b||t.planned;
   return t;
 }
@@ -811,14 +826,37 @@ function monthTotals(m){
   const fixSum=fixedFor(m).reduce((a,x)=>a+num(x.amount),0);
   return {films:fl,filmsSum,plannedSum,fixSum,total:filmsSum+fixSum};
 }
+// as linhas que foram digitadas à mão antes viram ajustes das linhas automáticas
+let migrating={};
+function migrateOld(fid){
+  const d=finDoc(fid); if(d.migrated||migrating[fid]||!allTasks[fid]||!finance._prices||!Object.values(defaultPrices()).some(v=>num(v))) return;
+  const old=(d.items||[]); if(!old.length){ return; }
+  migrating[fid]=true;
+  const lines=filmLines(fid), used=new Set(), newLines={...(d.lines||{})}, keep=[];
+  old.forEach(i=>{
+    const amt=num(i.actual||i.planned||i.amount), want=normTxt(i.desc);
+    const m=lines.find(l=>!used.has(l.key)&&l.uid===i.uid&&l.cat===i.cat&&(want? normTxt(l.desc).replace(/^revisao · /,'').startsWith(want)||want.startsWith(normTxt(l.desc)) : false));
+    if(m){ used.add(m.key); newLines[m.key]={amount:amt===m.def?null:amt,paid:!!i.paid}; }
+    else if(amt||i.desc) keep.push({id:i.id,cat:i.cat||'outros',uid:i.uid||'',desc:i.desc||'',amount:amt,paid:!!i.paid});
+  });
+  run(api.saveFinance(fid,{...d,lines:newLines,items:keep,migrated:true,updatedAt:Date.now()})).finally(()=>{ migrating[fid]=false; });
+}
+let finSubs={}, allTasks={}, renderTimer=null;
+const scheduleRender=()=>{ clearTimeout(renderTimer); renderTimer=setTimeout(render,30); };
+function ensureFinSubs(){
+  if(!isAdmin()||view!=='finance') return;
+  films.forEach(f=>{ if(finSubs[f.id]) return; finSubs[f.id]=true; const u=api.watchTasks(f.id,t=>{ allTasks[f.id]=t; if(view==='finance') scheduleRender(); }); finSubs[f.id]=u; });
+}
+function stopFinSubs(){ Object.values(finSubs).forEach(u=>typeof u==='function'&&u()); finSubs={}; allTasks={}; }
 function financeView(){
-  return `<div class="page-h"><div><h2 class="display">Financeiro</h2><p>Só administradores e sócios veem esta aba. Coloque quanto cada filme pode custar e quanto realmente custou.</p></div></div>
+  return `<div class="page-h"><div><h2 class="display">Financeiro</h2><p>Só administradores e sócios veem esta aba. Os custos de cada filme saem sozinhos da Produção, usando a tabela de preços.</p></div></div>
   <div class="subtabs">
     <button class="${finTab==='film'?'on':''}" data-act="finTab" data-id="film">🎬 Por filme</button>
     <button class="${finTab==='month'?'on':''}" data-act="finTab" data-id="month">📅 Por mês</button>
+    <button class="${finTab==='prices'?'on':''}" data-act="finTab" data-id="prices">🏷️ Tabela de preços</button>
     <button class="${finTab==='fixed'?'on':''}" data-act="finTab" data-id="fixed">📌 Custos fixos mensais</button>
   </div>
-  ${finTab==='month'?finMonthView():finTab==='fixed'?finFixedView():finFilmView()}`;
+  ${finTab==='month'?finMonthView():finTab==='fixed'?finFixedView():finTab==='prices'?finPricesView():finFilmView()}`;
 }
 function barChart(groups,series,{h=220,onClick}={}){
   // groups: [{label, values:[...], key}], series: [{name,color,stack?}]
@@ -836,47 +874,71 @@ function barChart(groups,series,{h=220,onClick}={}){
   });
   return out+`</svg><div class="legend">${series.map(x=>`<span><i style="background:${x.color};${x.faded?'opacity:.35':''}"></i>${x.name}</span>`).join('')}</div>`;
 }
+function finPricesView(){
+  const P=defaultPrices();
+  return `<div class="chart-card" style="max-width:720px">
+    <h4 class="display">Tabela de preços padrão</h4>
+    <p style="color:var(--muted);margin:0 0 16px">Quanto você paga por cada coisa. Vale para todos os filmes; dentro de cada filme dá para mudar o preço só daquele filme ou de uma pessoa específica.</p>
+    ${Object.entries(PRICE_AREAS).map(([k,v])=>`<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)"><span style="flex:1"><i class="cat-dot" style="background:${CATS[k][1]}"></i>${v}</span><span style="color:var(--muted)">R$</span><input class="in money" style="width:150px" data-price="${k}" value="${P[k]?num(P[k]):''}" placeholder="0,00"></div>`).join('')}
+    <div class="foot-note" style="padding:12px 0 0;border:0">Ex.: Vocal 100 · Música 200 · Efeitos 300. Mudou aqui, todos os filmes que usam o padrão atualizam sozinhos.</div>
+  </div>`;
+}
 function finFilmView(){
   const all=[...films].sort((a,b)=>(b.startedAt||b.createdAt||0)-(a.startedAt||a.createdAt||0));
   if(!all.length) return `<div class="card"><div class="empty"><div class="display">Nenhum filme</div>Cadastre um filme na Produção primeiro.</div></div>`;
   if(!finFilm||!films.some(f=>f.id===finFilm)) finFilm=(activeFilm()||all[0]).id;
-  const f=films.find(x=>x.id===finFilm), d=finDoc(f.id), t=filmTotals(f.id);
+  const f=films.find(x=>x.id===finFilm), d=finDoc(f.id);
+  if(!allTasks[f.id]) return `<div class="card"><div class="empty">Carregando…</div></div>`;
+  setTimeout(()=>migrateOld(f.id),0);
+  const t=filmTotals(f.id), lines=filmLines(f.id), extras=filmExtras(f.id), P=filmPrices(f.id), D=defaultPrices(), FP=d.prices||{};
   const saldo=t.budget-t.actual, pct=t.budget?Math.min(100,Math.round(t.actual/t.budget*100)):0;
   const people=users.filter(u=>u.active!==false).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  const items=d.items||[];
+  const noPrices=!Object.values(D).some(v=>num(v));
+  const pend=[...lines,...extras].filter(x=>!x.paid&&x.amount).length;
   return `<div class="toolbar-fin">
     <label class="field" style="margin:0;min-width:280px"><span>Filme</span><select class="in" data-finsel="film">${all.map(x=>`<option value="${x.id}" ${x.id===f.id?'selected':''}>${esc(x.title)} ${x.status==='concluido'?'(concluído)':x.status==='ativo'?'(editando)':'(na fila)'}</option>`).join('')}</select></label>
     <label class="field" style="margin:0"><span>Mês em que entra no financeiro</span><input type="month" class="in" data-finsel="filmMonth" value="${filmMonth(f)}"></label>
-    <label class="field" style="margin:0"><span>Quanto pode custar (orçamento total)</span><input class="in money" style="width:180px" data-finsel="budget" placeholder="soma do previsto" value="${d.budget?num(d.budget):''}"></label>
+    <label class="field" style="margin:0"><span>Orçamento total (opcional)</span><input class="in money" style="width:170px" data-finsel="budget" placeholder="automático" value="${d.budget?num(d.budget):''}"></label>
   </div>
+  ${noPrices?`<div class="card" style="padding:14px 18px;margin-bottom:16px;border-color:var(--amber);color:var(--amber)">⚠ Você ainda não definiu a <b>tabela de preços</b>. <a href="#" data-act="finTab" data-id="prices">Clique aqui para definir</a> (ex.: Vocal R$ 100) e os valores aparecem sozinhos.</div>`:''}
   <div class="kpis">
-    <div class="kpi"><div class="label">Pode custar</div><div class="v">${brl(t.budget)}</div><small>${d.budget?'orçamento definido por você':'soma dos valores previstos'}</small></div>
+    <div class="kpi"><div class="label">Pode custar</div><div class="v">${brl(t.budget)}</div><small>${d.budget?'orçamento definido por você':'pelos preços padrão'}</small></div>
     <div class="kpi red"><div class="label">Está custando</div><div class="v">${brl(t.actual)}</div><div class="meter"><i style="width:${pct}%"></i></div><small>${pct}% do orçamento</small></div>
     <div class="kpi ${saldo>=0?'good':'bad'}"><div class="label">${saldo>=0?'Ainda sobra':'Passou do orçamento'}</div><div class="v">${brl(Math.abs(saldo))}</div></div>
     <div class="kpi"><div class="label">Já pago</div><div class="v">${brl(t.paid)}</div><small>falta pagar ${brl(t.actual-t.paid)}</small></div>
   </div>
   <div class="fin-grid">
-    <div class="chart-card"><h4 class="display">Previsto × gasto por área</h4>
-      ${barChart(Object.keys(CATS).filter(c=>t.byCat[c].planned||t.byCat[c].actual).map(c=>({label:CATS[c][0].split(' ')[0],values:[t.byCat[c].planned,t.byCat[c].actual]})).concat([]).length?Object.keys(CATS).filter(c=>t.byCat[c].planned||t.byCat[c].actual).map(c=>({label:CATS[c][0].split(' ')[0],values:[t.byCat[c].planned,t.byCat[c].actual]})):[{label:'—',values:[0,0]}],[{name:'Previsto',color:'var(--muted)',faded:true},{name:'Gasto',color:'var(--accent)'}])}
+    <div class="chart-card"><h4 class="display">Quanto cada um recebe neste filme</h4>
+      ${(()=>{ const per={}; [...lines,...extras].forEach(x=>{ const k=x.uid||'_'; per[k]=per[k]||{amount:0,paid:0,n:0}; per[k].amount+=x.amount; if(x.paid) per[k].paid+=x.amount; per[k].n++; }); const ks=Object.keys(per).sort((a,b)=>per[b].amount-per[a].amount); const mx=Math.max(1,...ks.map(k=>per[k].amount));
+        return ks.length?ks.map(k=>`<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:13px;gap:8px"><span><b>${esc(k==='_'?'Sem pessoa':userName(k))}</b> <small style="color:var(--dim)">${per[k].n} item(ns)</small></span><span class="mono">${brl(per[k].amount)} ${per[k].paid>=per[k].amount&&per[k].amount?'<span style="color:var(--ok)">✓ pago</span>':`<small style="color:var(--muted)">pago ${brl(per[k].paid)}</small>`}</span></div><div style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden;position:relative"><i style="position:absolute;inset:0 auto 0 0;width:${per[k].amount/mx*100}%;background:var(--accent);opacity:.35"></i><i style="position:absolute;inset:0 auto 0 0;width:${per[k].paid/mx*100}%;background:var(--ok)"></i></div></div>`).join(''):'<div style="color:var(--dim);font-size:13px">Atribua idiomas na Produção e eles aparecem aqui.</div>'; })()}
     </div>
-    <div class="chart-card"><h4 class="display">Para onde vai o dinheiro</h4>
-      ${t.actual?Object.keys(CATS).filter(c=>t.byCat[c].actual).sort((a,b)=>t.byCat[b].actual-t.byCat[a].actual).map(c=>{ const v=t.byCat[c].actual, w=Math.round(v/t.actual*100); return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><span><i class="cat-dot" style="background:${CATS[c][1]}"></i>${CATS[c][0]}</span><span class="mono">${brl(v)} · ${w}%</span></div><div class="meter" style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${CATS[c][1]}"></i></div></div>`; }).join(''):'<div style="color:var(--dim);font-size:13px">Ainda não há gastos lançados neste filme.</div>'}
+    <div class="chart-card"><h4 class="display">Por área</h4>
+      ${t.actual?Object.keys(CATS).filter(c=>t.byCat[c].actual).sort((a,b)=>t.byCat[b].actual-t.byCat[a].actual).map(c=>{ const v=t.byCat[c].actual, w=Math.round(v/t.actual*100); return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><span><i class="cat-dot" style="background:${CATS[c][1]}"></i>${CATS[c][0]}</span><span class="mono">${brl(v)} · ${w}%</span></div><div style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${CATS[c][1]}"></i></div></div>`; }).join(''):'<div style="color:var(--dim);font-size:13px">Sem valores ainda.</div>'}
+      <details style="margin-top:14px"><summary style="cursor:pointer;color:var(--muted);font-size:13px">Preço diferente só neste filme</summary>
+        <div style="margin-top:10px">${Object.entries(PRICE_AREAS).map(([k,v])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="flex:1;font-size:13px">${v}</span><input class="in money" style="width:120px" data-fprice="${k}" value="${FP[k]!=null&&FP[k]!==''?num(FP[k]):''}" placeholder="${num(D[k])||'0'} (padrão)"></div>`).join('')}</div></details>
     </div>
   </div>
-  <div class="toolbar"><h3 class="display">Custos do filme</h3><div class="spacer"></div>
-    ${items.length?'':`<button class="btn" data-act="finDefaults">Criar linhas padrão (Revisão, Vocal, Efeitos, Música, Gerente)</button>`}
-    <button class="btn primary" data-act="finAdd">+ Adicionar custo</button></div>
-  <div class="card"><div class="tbl-wrap"><table style="min-width:900px"><thead><tr><th>Área</th><th>Pessoa</th><th>Descrição</th><th style="text-align:right">Previsto</th><th style="text-align:right">Gasto</th><th>Pago</th><th></th></tr></thead><tbody>
-    ${items.map(i=>`<tr class="fin-row">
+  <div class="toolbar"><h3 class="display">Pagamentos do filme</h3><div class="spacer"></div>
+    ${pend?`<button class="btn" data-act="finPayAll">✓ Marcar tudo como pago</button>`:''}
+    <button class="btn primary" data-act="finAdd">+ Extra / bônus</button></div>
+  <div class="card"><div class="tbl-wrap"><table style="min-width:820px"><thead><tr><th>Área</th><th>Pessoa</th><th>O quê</th><th style="text-align:right">Valor</th><th style="text-align:center">Pago</th><th></th></tr></thead><tbody>
+    ${lines.map(l=>`<tr class="fin-row ${l.paid?'':''}">
+      <td><span style="white-space:nowrap"><i class="cat-dot" style="background:${CATS[l.cat]?.[1]||'#999'}"></i>${CATS[l.cat]?.[0]||l.cat}</span></td>
+      <td><b>${esc(userName(l.uid))}</b></td>
+      <td>${flagImg(l.desc.replace(/^Revisão · /,''))} ${esc(l.desc)}</td>
+      <td style="text-align:right;white-space:nowrap">${l.custom?`<button class="icon-btn" title="Voltar ao preço padrão (${brl(l.def)})" data-act="finLineReset" data-id="${l.key}">↺</button>`:''}<input class="in money" style="width:120px;${l.custom?'border-color:var(--amber)':''}" data-line="${l.key}" data-k="amount" value="${num(l.amount)}"></td>
+      <td style="text-align:center"><input type="checkbox" data-line="${l.key}" data-k="paid" ${l.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)"></td>
+      <td><small style="color:var(--dim)">auto</small></td></tr>`).join('')}
+    ${extras.map(i=>`<tr class="fin-row">
       <td><select class="in" data-fin="${i.id}" data-k="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===i.cat?'selected':''}>${v[0]}</option>`).join('')}</select></td>
-      <td><select class="in" data-fin="${i.id}" data-k="uid"><option value="">—</option>${people.map(u=>`<option value="${u.uid}" ${u.uid===i.uid?'selected':''}>${esc(u.name)}</option>`).join('')}${i.uid&&!people.some(u=>u.uid===i.uid)?`<option value="${i.uid}" selected>${esc(userName(i.uid))}</option>`:''}</select></td>
-      <td><input class="in" data-fin="${i.id}" data-k="desc" value="${esc(i.desc||'')}" placeholder="ex.: Japonês 5.1, bônus prazo…"></td>
-      <td><input class="in money" style="width:120px" data-fin="${i.id}" data-k="planned" value="${i.planned?num(i.planned):''}" placeholder="0,00"></td>
-      <td><input class="in money" style="width:120px" data-fin="${i.id}" data-k="actual" value="${i.actual?num(i.actual):''}" placeholder="0,00"></td>
+      <td><select class="in" data-fin="${i.id}" data-k="uid"><option value="">—</option>${people.map(u=>`<option value="${u.uid}" ${u.uid===i.uid?'selected':''}>${esc(u.name)}</option>`).join('')}</select></td>
+      <td><input class="in" data-fin="${i.id}" data-k="desc" value="${esc(i.desc||'')}" placeholder="ex.: bônus por entregar no prazo"></td>
+      <td style="text-align:right"><input class="in money" style="width:120px" data-fin="${i.id}" data-k="amount" value="${i.amount?num(i.amount):''}" placeholder="0,00"></td>
       <td style="text-align:center"><input type="checkbox" data-fin="${i.id}" data-k="paid" ${i.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)"></td>
-      <td><button class="icon-btn del" data-act="finDel" data-id="${i.id}">✕</button></td></tr>`).join('')||`<tr><td colspan="7"><div class="empty" style="padding:30px">Nenhum custo lançado. Use os botões acima.</div></td></tr>`}
-    ${items.length?`<tr><td colspan="3" style="text-align:right;font-weight:700">TOTAL</td><td class="money" style="font-weight:700">${brl(t.planned)}</td><td class="money" style="font-weight:700;color:var(--accent)">${brl(t.actual)}</td><td colspan="2"></td></tr>`:''}
-  </tbody></table></div><div class="foot-note">Digite os valores e clique fora do campo — salva sozinho. Use vírgula ou ponto para centavos.</div></div>`;
+      <td><button class="icon-btn del" data-act="finDel" data-id="${i.id}">✕</button></td></tr>`).join('')}
+    ${!lines.length&&!extras.length?`<tr><td colspan="6"><div class="empty" style="padding:30px">Nada ainda. Quando você atribuir idiomas na Produção (editor e revisor), eles aparecem aqui sozinhos.</div></td></tr>`:''}
+    ${lines.length||extras.length?`<tr><td colspan="3" style="text-align:right;font-weight:700">TOTAL</td><td class="money" style="font-weight:700;color:var(--accent)">${brl(t.actual)}</td><td colspan="2" style="font-size:12px;color:var(--muted)">pago ${brl(t.paid)}</td></tr>`:''}
+  </tbody></table></div><div class="foot-note">As linhas “auto” vêm da Produção. Para mudar o valor de alguém, digite e clique fora (fica amarelo; ↺ volta ao padrão). Bônus e gastos extras: “+ Extra / bônus”.</div></div>`;
 }
 function finMonthView(){
   const m=finMonth, mt=monthTotals(m);
@@ -1002,9 +1064,10 @@ const ACT={
   finNextMonth(){ finMonth=addMonths(finMonth,1); render(); },
   finPickMonth(id){ finMonth=id; render(); },
   finOpenFilm(id){ finFilm=id; finTab='film'; render(); },
-  finAdd(){ const d=finDoc(finFilm); saveFin(finFilm,{...d,items:[...(d.items||[]),{id:uidGen(),cat:'vocal',uid:'',desc:'',planned:0,actual:0,paid:false}]}); },
-  finDefaults(){ const d=finDoc(finFilm); saveFin(finFilm,{...d,items:['revisao','vocal','efeitos','musica','gerente'].map(c=>({id:uidGen(),cat:c,uid:'',desc:'',planned:0,actual:0,paid:false}))}); },
-  async finDel(id){ if(!await confirmBox('Remover custo?','Essa linha de custo será apagada.','Remover',true)) return; const d=finDoc(finFilm); saveFin(finFilm,{...d,items:(d.items||[]).filter(i=>i.id!==id)}); },
+  finAdd(){ const d=finDoc(finFilm); saveFin(finFilm,{...d,items:[...(d.items||[]),{id:uidGen(),cat:'gerente',uid:'',desc:'',amount:0,paid:false}]}); },
+  async finDel(id){ if(!await confirmBox('Remover extra?','Essa linha será apagada.','Remover',true)) return; const d=finDoc(finFilm); saveFin(finFilm,{...d,items:(d.items||[]).filter(i=>i.id!==id)}); },
+  finLineReset(key){ const d=finDoc(finFilm), L={...(d.lines||{})}; L[key]={...(L[key]||{}),amount:null}; saveFin(finFilm,{...d,lines:L}); },
+  async finPayAll(){ if(!await confirmBox('Marcar tudo como pago?','Todas as linhas deste filme ficam como pagas.','Marcar como pago')) return; const d=finDoc(finFilm), L={...(d.lines||{})}; filmLines(finFilm).forEach(l=>L[l.key]={...(L[l.key]||{}),paid:true}); saveFin(finFilm,{...d,lines:L,items:(d.items||[]).map(i=>({...i,paid:true}))}); },
   fixAdd(){ run(api.addFixed({name:'',uid:'',amount:0,from:monthOf(),to:'',createdAt:Date.now()})); },
   async fixDel(id){ if(!await confirmBox('Remover custo fixo?','Ele deixa de contar em todos os meses.','Remover',true)) return; run(api.deleteFixed(id)); },
   resetUserPw(id){ resetPwModal(users.find(x=>x.uid===id)); },
@@ -1032,8 +1095,19 @@ document.addEventListener('change',e=>{
     if(k==='budget') saveFin(finFilm,{...d,items:d.items||[],budget:num(el.value)});
     return;
   }
+  if(el.dataset&&el.dataset.line){
+    const d=finDoc(finFilm), L={...(d.lines||{})}, k=el.dataset.k, key=el.dataset.line, cur={...(L[key]||{})};
+    if(k==='paid') cur.paid=el.checked; else { const def=(filmLines(finFilm).find(l=>l.key===key)||{}).def; const v=num(el.value); cur.amount=(el.value.trim()===''||v===def)?null:v; }
+    L[key]=cur; saveFin(finFilm,{...d,lines:L}); return;
+  }
+  if(el.dataset&&el.dataset.price){
+    const d=finance._prices||{}; saveFin('_prices',{...d,prices:{...(d.prices||{}),[el.dataset.price]:num(el.value)}}); return;
+  }
+  if(el.dataset&&el.dataset.fprice){
+    const d=finDoc(finFilm); saveFin(finFilm,{...d,prices:{...(d.prices||{}),[el.dataset.fprice]:el.value.trim()===''?null:num(el.value)}}); return;
+  }
   if(el.dataset&&el.dataset.fin){
-    const d=finDoc(finFilm), k=el.dataset.k, v=k==='paid'?el.checked:(k==='planned'||k==='actual')?num(el.value):el.value;
+    const d=finDoc(finFilm), k=el.dataset.k, v=k==='paid'?el.checked:(k==='amount')?num(el.value):el.value;
     saveFin(finFilm,{...d,items:(d.items||[]).map(i=>i.id===el.dataset.fin?{...i,[k]:v}:i)}); return;
   }
   if(el.dataset&&el.dataset.fx){
