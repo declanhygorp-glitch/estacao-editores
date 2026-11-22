@@ -692,7 +692,8 @@ function prodView(){
     +`<button class="tab ${tab==='resumo'?'on':''}" data-act="tab" data-id="resumo"><span class="dot ${all.cls}"></span><span class="display">Resumo</span><small>${all.total} idiomas</small></button>`;
   const statusTxt=f.status==='ativo'?'Editando agora':f.status==='fila'?`Na fila · posição ${queue().findIndex(x=>x.id===f.id)+2}`:'Concluído';
   const mat=f.material||{};
-  const matBadges=AREAS.map(a=>`<span class="badge ${mat[a.id]?'on':''} ${canMaterial()&&f.status!=='concluido'?'click':''}" ${canMaterial()&&f.status!=='concluido'?`data-act="toggleMat" data-id="${a.id}" title="Clique para mudar"`:''}>${mat[a.id]?'✓':'○'} Material ${a.name} ${mat[a.id]?'liberado':'não liberado'}</span>`).join('');
+  const sepUid=filmMaterialUid(f);
+  const matBadges=(sepUid?`<span class="badge">✂ Separador: <b style="color:var(--text)">${esc(userName(sepUid))}</b></span>`:'')+AREAS.map(a=>`<span class="badge ${mat[a.id]?'on':''} ${canMaterial()&&f.status!=='concluido'?'click':''}" ${canMaterial()&&f.status!=='concluido'?`data-act="toggleMat" data-id="${a.id}" title="Clique para mudar"`:''}>${mat[a.id]?'✓':'○'} Material ${a.name} ${mat[a.id]?'liberado':'não liberado'}</span>`).join('');
   const actions=[];
   if(ad){
     actions.push(`<button class="btn sm" data-act="editFilm">Editar filme</button>`);
@@ -796,13 +797,17 @@ function resumoView(){
 /* ---------------- financeiro ---------------- */
 const finDoc = fid => finance[fid] || {items:[]};
 const filmMonth = f => (finance[f.id]&&finance[f.id].month) || monthOf(f.startedAt||f.createdAt);
-const PRICE_AREAS = {vocal:'Vocal (por idioma)',efeitos:'Efeitos (por tarefa)',musica:'Música (por tarefa)',revisao:'Revisão (por idioma revisado)'};
-const defaultPrices = () => ({vocal:0,efeitos:0,musica:0,revisao:0,...((finance._prices||{}).prices||{})});
+const PRICE_AREAS = {material:'Material / separador (por filme)',vocal:'Vocal (por idioma)',efeitos:'Efeitos (por tarefa)',musica:'Música (por tarefa)',revisao:'Revisão (por idioma revisado)'};
+const defaultPrices = () => ({material:0,vocal:0,efeitos:0,musica:0,revisao:0,...((finance._prices||{}).prices||{})});
 const filmPrices = fid => { const d=defaultPrices(), o=finDoc(fid).prices||{}; Object.keys(o).forEach(k=>{ if(o[k]!==''&&o[k]!=null) d[k]=num(o[k]); }); return d; };
 const normTxt = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s*(5\.1|2\.0|7\.1)\s*/g,'').trim();
+const matUsers = () => users.filter(u=>u.active!==false&&(u.roles||[]).includes('material'));
+const filmMaterialUid = f => f ? (f.materialUid || (matUsers().length===1 ? matUsers()[0].uid : '')) : '';
 // linhas automáticas: vêm da Produção (quem editou cada idioma e quem revisou)
 function filmLines(fid){
   const P=filmPrices(fid), saved=finDoc(fid).lines||{}, out=[];
+  const fm=films.find(x=>x.id===fid), mu=filmMaterialUid(fm);
+  if(mu) out.push({key:'material',cat:'material',uid:mu,desc:'Separação do material',def:num(P.material)});
   [...(allTasks[fid]||[])].sort((a,b)=>(a.area>b.area?1:a.area<b.area?-1:0)||userName(a.editorUid).localeCompare(userName(b.editorUid))||(a.order||0)-(b.order||0)).forEach(t=>{
     if(t.editorUid) out.push({key:t.id+':e',cat:t.area,uid:t.editorUid,desc:t.lang,def:num(P[t.area])});
     if(t.reviewerUid) out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid,desc:'Revisão · '+t.lang,def:num(P.revisao)});
@@ -1139,6 +1144,7 @@ function filmModal(f,limited){
         </div></div>
         ${isNew?`<div class="field" style="margin-top:14px"><span>Onde colocar</span><div class="checks" id="fm-where">
           <span class="check on" data-v="fim">No fim da fila</span><span class="check" data-v="inicio">Como próximo filme</span>${activeFilm()?'':'<span class="check" data-v="ativo">Começar agora</span>'}</div></div>`:''}
+        <label class="field" style="margin-top:6px"><span>Editor de material (separador) deste filme</span><select class="in" id="fm-matuid"><option value="">— ninguém —</option>${(matUsers().length?matUsers():users.filter(u=>u.active!==false)).map(u=>`<option value="${u.uid}" ${u.uid===filmMaterialUid(f)?'selected':''}>${esc(u.name)}</option>`).join('')}</select></label>
         <div class="field" style="margin-top:6px"><span>Material liberado</span><div class="checks" id="fm-mat">${AREAS.map(a=>`<span class="check ${mat[a.id]?'on':''}" data-v="${a.id}">${a.name}</span>`).join('')}</div></div>`}
       <label class="field" style="margin-top:6px"><span>Link do Drive (pasta principal dos arquivos)</span><input class="in mono" id="fm-drive" value="${esc(f?.driveLink||'')}" placeholder="https://drive.google.com/drive/folders/…"></label>
       <div class="field"><span>Outros links de download (ex.: 6_CHANNELS, STEREO) e os idiomas de cada um</span><div id="fm-links"></div>
@@ -1169,7 +1175,7 @@ function filmModal(f,limited){
     if(limited){ await run(api.updateFilm(f.id,{driveLink:drive,links:clean,updatedAt:Date.now()}),'Links salvos.'); closeModal(); return; }
     const title=bg.querySelector('#fm-title').value.trim(); if(!title){ toast('Digite o nome do filme.',true); return; }
     const material={}; bg.querySelectorAll('#fm-mat .check').forEach(c=>material[c.dataset.v]=c.classList.contains('on'));
-    const data={title,poster,driveLink:drive,links:clean,material,updatedAt:Date.now()};
+    const data={title,poster,driveLink:drive,links:clean,material,materialUid:bg.querySelector('#fm-matuid').value,updatedAt:Date.now()};
     if(isNew){
       const where=bg.querySelector('#fm-where .check.on')?.dataset.v||'fim', q=queue();
       const order=where==='inicio'?Math.min(0,...q.map(x=>x.order||0))-1:Math.max(0,...q.map(x=>x.order||0))+1;
