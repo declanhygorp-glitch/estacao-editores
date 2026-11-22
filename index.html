@@ -689,6 +689,7 @@ function prodView(){
   const ad=canManage();
   const all=areaStats(tasks);
   const tabs=AREAS.map(a=>{ const s=areaStats(tasks.filter(t=>t.area===a.id)); return `<button class="tab ${tab===a.id?'on':''}" data-act="tab" data-id="${a.id}"><span class="dot ${s.cls}"></span><span class="display">${a.name}</span><small>${s.label}${(()=>{const n=tasks.filter(t=>t.area===a.id&&!t.editorUid).length;return n?` · <b style="color:var(--ok)">${n} livre${n>1?'s':''}</b>`:''})()}</small></button>`; }).join('')
+    +(()=>{ const m=f.material||{}, n=AREAS.filter(a=>m[a.id]).length, su=filmMaterialUid(f); return `<button class="tab ${tab==='material'?'on':''}" data-act="tab" data-id="material"><span class="dot ${n===3?'ok':su?'doing':''}"></span><span class="display">Material</span><small>${n===3?'Liberado':n+'/3 liberado'}${su?'':' · <b style="color:var(--ok)">livre</b>'}</small></button>`; })()
     +`<button class="tab ${tab==='resumo'?'on':''}" data-act="tab" data-id="resumo"><span class="dot ${all.cls}"></span><span class="display">Resumo</span><small>${all.total} idiomas</small></button>`;
   const statusTxt=f.status==='ativo'?'Editando agora':f.status==='fila'?`Na fila · posição ${queue().findIndex(x=>x.id===f.id)+2}`:'Concluído';
   const mat=f.material||{};
@@ -734,7 +735,7 @@ function prodView(){
       <div class="bar"><i style="width:${all.pct}%"></i></div>
     </div>
   </div>
-  ${tab==='resumo'?resumoView():areaView(f)}`;
+  ${tab==='resumo'?resumoView():tab==='material'?materialView(f):areaView(f)}`;
 }
 function areaView(f){
   const ad=canManage();
@@ -813,9 +814,40 @@ function rowHtml(t,i){
     ${ad?`<td><button class="icon-btn del" data-act="delTask" data-id="${t.id}" title="Remover">✕</button></td>`:''}
   </tr>`;
 }
+function materialView(f){
+  const su=filmMaterialUid(f), m=f.material||{}, mg=canManage(), closed=f.status==='concluido';
+  const canEditMat=canMaterial()&&!closed&&(mg||!su||su===me.uid);
+  const mu=matUsers();
+  const price=isAdmin()&&finance._prices?num(filmPrices(f.id).material):0;
+  return `<div class="toolbar"><h3 class="display">Material do filme</h3><div class="spacer"></div>
+    ${canEditMat?`<button class="btn" data-act="editLinks">✎ Editar links de download</button>`:''}</div>
+  <div class="fin-grid">
+    <div class="card" style="padding:22px">
+      <div class="label" style="margin-bottom:14px">Separador (editor de material)</div>
+      ${su?`<div style="display:flex;align-items:center;gap:14px"><div class="avatar" style="width:52px;height:52px;font-size:18px;border-color:var(--accent)">${esc(initials(userName(su)))}</div>
+          <div><div style="font-size:20px;font-weight:700">${esc(userName(su))}${su===me.uid?' <small style="color:var(--accent)">(você)</small>':''}</div><div style="color:var(--muted);font-size:13px">Cuida de separar e liberar o material deste filme</div></div></div>`
+        :`<div style="display:flex;align-items:center;gap:14px"><div class="avatar" style="width:52px;height:52px;font-size:22px;color:var(--ok);border-color:var(--okGlow)">✋</div>
+          <div><div style="font-size:20px;font-weight:700;color:var(--ok)">Ninguém pegou ainda</div><div style="color:var(--muted);font-size:13px">Quem tem o cargo de Editor de material pode pegar</div></div></div>`}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center">
+        ${mg&&!closed?`<select class="in" style="max-width:260px" data-filmf="materialUid"><option value="">✋ Livre — quem quiser pega</option>${(mu.length?mu:users.filter(u=>u.active!==false)).map(u=>`<option value="${u.uid}" ${u.uid===su?'selected':''}>${esc(u.name)}</option>`).join('')}</select>`:''}
+        ${!su&&has('material')&&!closed?`<button class="btn primary" data-act="claimMat">✋ Pegar o material deste filme</button>`:''}
+        ${su===me.uid&&!mg&&!closed?`<button class="btn" data-act="releaseMat">↩ Devolver</button>`:''}
+      </div>
+      ${price?`<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px">Custo do material neste filme: <b class="mono" style="color:var(--text)">${brl(price)}</b> <small>(tabela de preços)</small></div>`:''}
+    </div>
+    <div class="card" style="padding:22px">
+      <div class="label" style="margin-bottom:14px">O que já foi liberado</div>
+      ${AREAS.map(a=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:20px">${m[a.id]?'✅':'⏳'}</span><span style="flex:1;font-weight:600">Material de ${a.name}</span>
+        ${canEditMat?`<button class="btn sm ${m[a.id]?'':'primary'}" data-act="toggleMat" data-id="${a.id}">${m[a.id]?'Desmarcar':'Marcar como liberado'}</button>`:`<span style="color:${m[a.id]?'var(--ok)':'var(--muted)'};font-size:13px">${m[a.id]?'Liberado':'Ainda não'}</span>`}</div>`).join('')}
+      <div style="color:var(--dim);font-size:12.5px;margin-top:12px">Quando o material de uma área é liberado, os editores dessa área já podem baixar pelos links do filme.</div>
+    </div>
+  </div>`;
+}
 function resumoView(){
   const rows=AREAS.flatMap(a=>tasks.filter(t=>t.area===a.id).sort((x,y)=>userName(x.editorUid).localeCompare(userName(y.editorUid))||(x.order-y.order)).map(t=>({...t,areaName:a.name})));
-  return `<div class="toolbar"><h3 class="display">Ficha completa do filme</h3></div>
+  const su=filmMaterialUid(selFilm());
+  return `<div class="toolbar"><h3 class="display">Ficha completa do filme</h3><div class="spacer"></div><span class="badge">✂ Material: <b style="color:var(--text)">${su?esc(userName(su)):'ninguém ainda'}</b></span></div>
   <div class="card">${rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Área</th><th>Idioma</th><th>Editor</th><th>Revisor</th><th>Status revisão</th><th>Status</th><th>Início</th><th>Entrega</th></tr></thead><tbody>
   ${rows.map(t=>`<tr class="${t.editorUid===me.uid||t.reviewerUid===me.uid?'mine':''}"><td>${t.areaName}</td><td><span style="display:inline-flex;gap:8px;align-items:center;font-weight:600">${flagImg(t.lang)}${esc(t.lang)}</span></td><td>${esc(userName(t.editorUid))}</td><td>${esc(t.reviewerUid?userName(t.reviewerUid):'—')}</td>
   <td><span class="in pill r-${t.reviewStatus}" style="display:inline-block;width:auto">${REVIEW[t.reviewStatus]||'—'}</span></td><td><span class="in pill s-${t.status}" style="display:inline-block;width:auto">${STATUS[t.status]||'—'}</span></td><td class="mono">${fmtD(t.start)}</td><td class="mono">${fmtD(t.delivery)}</td></tr>`).join('')}
@@ -830,12 +862,12 @@ const defaultPrices = () => ({material:0,vocal:0,efeitos:0,musica:0,revisao:0,..
 const filmPrices = fid => { const d=defaultPrices(), o=finDoc(fid).prices||{}; Object.keys(o).forEach(k=>{ if(o[k]!==''&&o[k]!=null) d[k]=num(o[k]); }); return d; };
 const normTxt = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s*(5\.1|2\.0|7\.1)\s*/g,'').trim();
 const matUsers = () => users.filter(u=>u.active!==false&&(u.roles||[]).includes('material'));
-const filmMaterialUid = f => f ? (f.materialUid || (matUsers().length===1 ? matUsers()[0].uid : '')) : '';
+const filmMaterialUid = f => !f ? '' : (f.materialUid!==undefined ? (f.materialUid||'') : (matUsers().length===1 ? matUsers()[0].uid : ''));
 // linhas automáticas: vêm da Produção (quem editou cada idioma e quem revisou)
 function filmLines(fid){
   const P=filmPrices(fid), saved=finDoc(fid).lines||{}, out=[];
   const fm=films.find(x=>x.id===fid), mu=filmMaterialUid(fm);
-  if(mu) out.push({key:'material',cat:'material',uid:mu,desc:'Separação do material',def:num(P.material)});
+  if(fm) out.push({key:'material',cat:'material',uid:mu||'',desc:'Separação do material'+(mu?'':' (ninguém pegou ainda)'),def:num(P.material)});
   [...(allTasks[fid]||[])].sort((a,b)=>(a.area>b.area?1:a.area<b.area?-1:0)||userName(a.editorUid).localeCompare(userName(b.editorUid))||(a.order||0)-(b.order||0)).forEach(t=>{
     out.push({key:t.id+':e',cat:t.area,uid:t.editorUid||'',desc:t.lang+(t.editorUid?'':' (ninguém pegou ainda)'),def:num(P[t.area])});
     if(t.reviewerUid) out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid,desc:'Revisão · '+t.lang,def:num(P.revisao)});
@@ -1061,6 +1093,8 @@ const ACT={
   newFilm(){ filmModal(null); },
   editFilm(){ filmModal(selFilm()); },
   editLinks(){ filmModal(selFilm(),true); },
+  claimMat(){ const f=selFilm(); run(api.updateFilm(f.id,{materialUid:me.uid,updatedAt:Date.now()}),'O material deste filme agora é seu!'); },
+  async releaseMat(){ if(!await confirmBox('Devolver o material?','O material deste filme fica livre para outro editor de material pegar.','Devolver')) return; const f=selFilm(); run(api.updateFilm(f.id,{materialUid:'',updatedAt:Date.now()})); },
   toggleMat(area){ const f=selFilm(); const m={...(f.material||{})}; m[area]=!m[area]; run(api.updateFilm(f.id,{material:m,updatedAt:Date.now()})); },
   async startFilm(){
     const f=selFilm(), a=activeFilm();
@@ -1123,6 +1157,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{ if(e.target.id==='hsearch'){ const v=e.target.value.toLowerCase(); document.querySelectorAll('#hgrid .hist').forEach(c=>c.style.display=c.dataset.title.includes(v)?'':'none'); } });
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.dataset&&el.dataset.filmf){ run(api.updateFilm(selId,{[el.dataset.filmf]:el.value,updatedAt:Date.now()}),'Salvo.'); return; }
   if(el.dataset&&el.dataset.finsel){
     const k=el.dataset.finsel;
     if(k==='film'){ finFilm=el.value; render(); return; }
