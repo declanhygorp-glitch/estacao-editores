@@ -967,6 +967,7 @@ function finFilmView(){
     <label class="field" style="margin:0"><span>Orçamento total (opcional)</span><input class="in money" style="width:170px" data-finsel="budget" placeholder="automático" value="${d.budget?num(d.budget):''}"></label>
   </div>
   ${noPrices?`<div class="card" style="padding:14px 18px;margin-bottom:16px;border-color:var(--amber);color:var(--amber)">⚠ Você ainda não definiu a <b>tabela de preços</b>. <a href="#" data-act="finTab" data-id="prices">Clique aqui para definir</a> (ex.: Vocal R$ 100) e os valores aparecem sozinhos.</div>`:''}
+  <div style="display:flex;align-items:center;gap:14px;margin:0 0 16px"><div class="poster" style="width:46px;border-radius:6px;box-shadow:none">${posterHtml(f)}</div><div><div class="label">Você está vendo o financeiro de</div><div class="display" style="font-size:26px;line-height:1.1">${esc(f.title)}</div></div></div>
   <div class="kpis">
     <div class="kpi"><div class="label">Pode custar</div><div class="v">${brl(t.budget)}</div><small>${d.budget?'orçamento definido por você':'pelos preços padrão'}</small></div>
     <div class="kpi red"><div class="label">Está custando</div><div class="v">${brl(t.actual)}</div><div class="meter"><i style="width:${pct}%"></i></div><small>${pct}% do orçamento</small></div>
@@ -984,7 +985,7 @@ function finFilmView(){
         <div style="margin-top:10px">${Object.entries(PRICE_AREAS).map(([k,v])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="flex:1;font-size:13px">${v}</span><input class="in money" style="width:120px" data-fprice="${k}" value="${FP[k]!=null&&FP[k]!==''?num(FP[k]):''}" placeholder="${num(D[k])||'0'} (padrão)"></div>`).join('')}</div></details>
     </div>
   </div>
-  <div class="toolbar"><h3 class="display">Pagamentos do filme</h3><div class="spacer"></div>
+  <div class="toolbar"><h3 class="display">Pagamentos do filme <span style="color:var(--accent)">${esc(f.title)}</span></h3><div class="spacer"></div>
     ${pend?`<button class="btn" data-act="finPayAll">✓ Marcar tudo como pago</button>`:''}
     <button class="btn primary" data-act="finAdd">+ Extra / bônus</button></div>
   <div class="card"><div class="tbl-wrap"><table style="min-width:820px"><thead><tr><th>Área</th><th>Pessoa</th><th>O quê</th><th style="text-align:right">Valor</th><th style="text-align:center">Pago</th><th></th></tr></thead><tbody>
