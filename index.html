@@ -688,7 +688,7 @@ function prodView(){
   if(!f) return `<div class="empty" style="margin-top:60px"><div class="display">Nenhum filme ainda</div>${canManage()?'Clique em “Adicionar filme” para começar a fila.':'Quando o administrador cadastrar um filme, ele aparece aqui.'}</div>`;
   const ad=canManage();
   const all=areaStats(tasks);
-  const tabs=AREAS.map(a=>{ const s=areaStats(tasks.filter(t=>t.area===a.id)); return `<button class="tab ${tab===a.id?'on':''}" data-act="tab" data-id="${a.id}"><span class="dot ${s.cls}"></span><span class="display">${a.name}</span><small>${s.label}</small></button>`; }).join('')
+  const tabs=AREAS.map(a=>{ const s=areaStats(tasks.filter(t=>t.area===a.id)); return `<button class="tab ${tab===a.id?'on':''}" data-act="tab" data-id="${a.id}"><span class="dot ${s.cls}"></span><span class="display">${a.name}</span><small>${s.label}${(()=>{const n=tasks.filter(t=>t.area===a.id&&!t.editorUid).length;return n?` · <b style="color:var(--ok)">${n} livre${n>1?'s':''}</b>`:''})()}</small></button>`; }).join('')
     +`<button class="tab ${tab==='resumo'?'on':''}" data-act="tab" data-id="resumo"><span class="dot ${all.cls}"></span><span class="display">Resumo</span><small>${all.total} idiomas</small></button>`;
   const statusTxt=f.status==='ativo'?'Editando agora':f.status==='fila'?`Na fila · posição ${queue().findIndex(x=>x.id===f.id)+2}`:'Concluído';
   const mat=f.material||{};
@@ -742,12 +742,14 @@ function areaView(f){
   let list=tasks.filter(t=>t.area===tab);
   if(onlyMine) list=list.filter(t=>t.editorUid===me.uid||t.reviewerUid===me.uid);
   const groups={};
-  list.sort((a,b)=>(a.order||0)-(b.order||0)).forEach(t=>{(groups[t.editorUid]=groups[t.editorUid]||[]).push(t);});
-  const keys=Object.keys(groups).sort((a,b)=>(b===me.uid)-(a===me.uid)||userName(a).localeCompare(userName(b)));
+  list.sort((a,b)=>(a.order||0)-(b.order||0)).forEach(t=>{ const k=t.editorUid||''; (groups[k]=groups[k]||[]).push(t);});
+  const keys=Object.keys(groups).sort((a,b)=>(a==='')?-1:(b==='')?1:(b===me.uid)-(a===me.uid)||userName(a).localeCompare(userName(b)));
+  const freeRev=list.filter(t=>t.editorUid&&!t.reviewerUid).length;
   return `
   <div class="toolbar">
     <h3 class="display">${area.name}</h3>
     <span class="switch ${onlyMine?'on':''}" data-act="onlyMine"><i></i>Só os meus</span>
+    ${freeRev&&(has('revisor')||ad)?`<span class="badge" style="border-color:var(--amber);color:var(--amber)">👀 ${freeRev} idioma(s) sem revisor</span>`:''}
     <div class="spacer"></div>
     ${ad&&f.status!=='concluido'?`<button class="btn primary" data-act="assign">+ Atribuir idiomas</button>`:''}
   </div>
@@ -757,6 +759,17 @@ function areaView(f){
 }
 function groupHtml(uid,list){
   const s=areaStats(list), ad=canManage();
+  if(!uid){
+    const canTake=has(tab)&&selFilm()?.status!=='concluido';
+    const price=isAdmin()&&finance._prices?num(filmPrices(selId)[tab]):0;
+    return `<div class="group">
+    <div class="group-h" style="border-left-color:var(--ok);background:linear-gradient(90deg,var(--okSoft),var(--panel2) 60%)"><div class="avatar" style="color:var(--ok);border-color:var(--okGlow)">✋</div><span class="nm">Disponíveis para pegar</span>
+      <span class="pill-c mono">${list.length} ${list.length===1?'idioma':'idiomas'}</span>
+      ${price?`<span class="pill-c mono" title="Custo previsto destes idiomas">≈ ${brl(price*list.length)}</span>`:''}
+      <span style="margin-left:auto;font-size:12.5px;color:var(--muted)">${canTake?'Clique em “Pegar” nos idiomas que você quer fazer':'Quem tem o cargo desta área pode pegar'}</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th style="width:14px"></th><th>Idioma</th><th style="text-align:center">Nº</th><th>Urgência</th><th>Entrega prevista</th><th>Revisor</th><th>${ad?'Dar para':''}</th><th></th>${ad?'<th></th>':''}</tr></thead>
+    <tbody>${list.map((t,i)=>freeRowHtml(t,i,canTake)).join('')}</tbody></table></div></div>`;
+  }
   return `<div class="group">
     <div class="group-h"><div class="avatar">${esc(initials(userName(uid)))}</div><span class="nm">${esc(userName(uid))}${uid===me.uid?' <small style="color:var(--accent);font-weight:600">(você)</small>':''}</span>
       <span class="pill-c mono">${list.length} ${list.length===1?'idioma':'idiomas'}</span>
@@ -767,19 +780,34 @@ function groupHtml(uid,list){
 function selectHtml(field,opts,val,enabled,prefix,tid){
   return `<select class="in pill ${prefix}${esc(val)}" data-t="${tid}" data-f="${field}" ${enabled?'':'disabled'}>${Object.entries(opts).map(([k,v])=>`<option value="${k}" ${k===val?'selected':''}>${v}</option>`).join('')}</select>`;
 }
+function freeRowHtml(t,i,canTake){
+  const ad=canManage(), editors=users.filter(u=>u.active!==false&&(u.roles||[]).includes(tab));
+  return `<tr>
+    <td><span class="sbar" style="background:var(--ok)"></span></td>
+    <td><div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}</div></td>
+    <td class="num mono">${i+1}</td>
+    <td>${selectHtml('urgency',URG,t.urgency||'media',ad,'u-',t.id)}</td>
+    <td>${ad?`<input type="date" class="in" data-t="${t.id}" data-f="delivery" value="${esc(t.delivery||'')}">`:`<span class="mono" style="color:var(--muted)">${fmtD(t.delivery)}</span>`}</td>
+    <td><span style="color:var(--muted)">${t.reviewerUid?esc(userName(t.reviewerUid)):'—'}</span></td>
+    <td>${ad?`<select class="in" data-t="${t.id}" data-f="editorUid"><option value="">— livre —</option>${editors.map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join('')}</select>`:''}</td>
+    <td style="text-align:right">${canTake?`<button class="btn sm primary" data-act="claimTask" data-id="${t.id}">✋ Pegar</button>`:''}</td>
+    ${ad?`<td><button class="icon-btn del" data-act="delTask" data-id="${t.id}" title="Remover">✕</button></td>`:''}
+  </tr>`;
+}
 function rowHtml(t,i){
   const ad=canManage(), closed=selFilm()?.status==='concluido'&&!ad;
   const ed=!closed&&(ad||t.editorUid===me.uid), rv=!closed&&(ad||t.reviewerUid===me.uid);
   const reviewers=users.filter(u=>u.active!==false&&(u.roles||[]).includes('revisor'));
   return `<tr class="${t.editorUid===me.uid||t.reviewerUid===me.uid?'mine':''}">
     <td><span class="sbar s-${t.status}"></span></td>
-    <td>${ad?`<input class="in" style="font-weight:600;min-width:170px" data-t="${t.id}" data-f="lang" value="${esc(t.lang)}">`:`<div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}</div>`}</td>
+    <td>${ad?`<input class="in" style="font-weight:600;min-width:170px" data-t="${t.id}" data-f="lang" value="${esc(t.lang)}">`:`<div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}${t.editorUid===me.uid&&(t.status||'pendente')==='pendente'&&!closed?`<button class="icon-btn" style="margin-left:auto" title="Devolver este idioma (volta para Disponíveis)" data-act="releaseTask" data-id="${t.id}">↩</button>`:''}</div>`}</td>
     <td class="num mono">${i+1}</td>
     <td><input type="date" class="in" data-t="${t.id}" data-f="start" value="${esc(t.start||'')}" ${ed?'':'disabled'}></td>
     <td><input type="date" class="in" data-t="${t.id}" data-f="delivery" value="${esc(t.delivery||'')}" ${ed?'':'disabled'}></td>
     <td>${selectHtml('urgency',URG,t.urgency||'media',ad,'u-',t.id)}</td>
     <td>${ad?`<select class="in" data-t="${t.id}" data-f="reviewerUid"><option value="">— sem revisor —</option>${reviewers.map(u=>`<option value="${u.uid}" ${u.uid===t.reviewerUid?'selected':''}>${esc(u.name)}</option>`).join('')}${t.reviewerUid&&!reviewers.some(u=>u.uid===t.reviewerUid)?`<option value="${t.reviewerUid}" selected>${esc(userName(t.reviewerUid))}</option>`:''}</select>`
-      :`<div class="lang-cell" style="font-weight:500">${esc(t.reviewerUid?userName(t.reviewerUid):'—')}</div>`}</td>
+      :!t.reviewerUid&&has('revisor')&&t.editorUid!==me.uid&&!closed?`<button class="btn sm" style="border-color:var(--amber);color:var(--amber);width:100%;justify-content:center" data-act="claimRev" data-id="${t.id}">👀 Pegar revisão</button>`
+      :`<div class="lang-cell" style="font-weight:500">${esc(t.reviewerUid?userName(t.reviewerUid):'— sem revisor —')}${t.reviewerUid===me.uid&&(t.reviewStatus||'pendente')==='pendente'&&!closed?`<button class="icon-btn" style="margin-left:auto" title="Largar esta revisão" data-act="releaseRev" data-id="${t.id}">↩</button>`:''}</div>`}</td>
     <td>${selectHtml('reviewStatus',REVIEW,t.reviewStatus||'pendente',rv,'r-',t.id)}</td>
     <td>${selectHtml('status',STATUS,t.status||'pendente',ed,'s-',t.id)}</td>
     ${ad?`<td><button class="icon-btn del" data-act="delTask" data-id="${t.id}" title="Remover">✕</button></td>`:''}
@@ -809,7 +837,7 @@ function filmLines(fid){
   const fm=films.find(x=>x.id===fid), mu=filmMaterialUid(fm);
   if(mu) out.push({key:'material',cat:'material',uid:mu,desc:'Separação do material',def:num(P.material)});
   [...(allTasks[fid]||[])].sort((a,b)=>(a.area>b.area?1:a.area<b.area?-1:0)||userName(a.editorUid).localeCompare(userName(b.editorUid))||(a.order||0)-(b.order||0)).forEach(t=>{
-    if(t.editorUid) out.push({key:t.id+':e',cat:t.area,uid:t.editorUid,desc:t.lang,def:num(P[t.area])});
+    out.push({key:t.id+':e',cat:t.area,uid:t.editorUid||'',desc:t.lang+(t.editorUid?'':' (ninguém pegou ainda)'),def:num(P[t.area])});
     if(t.reviewerUid) out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid,desc:'Revisão · '+t.lang,def:num(P.revisao)});
   });
   return out.map(l=>{ const o=saved[l.key]||{}, has=o.amount!=null&&o.amount!==''; return {...l,amount:has?num(o.amount):l.def,custom:has&&num(o.amount)!==l.def,paid:!!o.paid}; });
@@ -915,7 +943,7 @@ function finFilmView(){
   <div class="fin-grid">
     <div class="chart-card"><h4 class="display">Quanto cada um recebe neste filme</h4>
       ${(()=>{ const per={}; [...lines,...extras].forEach(x=>{ const k=x.uid||'_'; per[k]=per[k]||{amount:0,paid:0,n:0}; per[k].amount+=x.amount; if(x.paid) per[k].paid+=x.amount; per[k].n++; }); const ks=Object.keys(per).sort((a,b)=>per[b].amount-per[a].amount); const mx=Math.max(1,...ks.map(k=>per[k].amount));
-        return ks.length?ks.map(k=>`<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:13px;gap:8px"><span><b>${esc(k==='_'?'Sem pessoa':userName(k))}</b> <small style="color:var(--dim)">${per[k].n} item(ns)</small></span><span class="mono">${brl(per[k].amount)} ${per[k].paid>=per[k].amount&&per[k].amount?'<span style="color:var(--ok)">✓ pago</span>':`<small style="color:var(--muted)">pago ${brl(per[k].paid)}</small>`}</span></div><div style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden;position:relative"><i style="position:absolute;inset:0 auto 0 0;width:${per[k].amount/mx*100}%;background:var(--accent);opacity:.35"></i><i style="position:absolute;inset:0 auto 0 0;width:${per[k].paid/mx*100}%;background:var(--ok)"></i></div></div>`).join(''):'<div style="color:var(--dim);font-size:13px">Atribua idiomas na Produção e eles aparecem aqui.</div>'; })()}
+        return ks.length?ks.map(k=>`<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:13px;gap:8px"><span><b>${esc(k==='_'?'Livre (ninguém pegou)':userName(k))}</b> <small style="color:var(--dim)">${per[k].n} item(ns)</small></span><span class="mono">${brl(per[k].amount)} ${per[k].paid>=per[k].amount&&per[k].amount?'<span style="color:var(--ok)">✓ pago</span>':`<small style="color:var(--muted)">pago ${brl(per[k].paid)}</small>`}</span></div><div style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden;position:relative"><i style="position:absolute;inset:0 auto 0 0;width:${per[k].amount/mx*100}%;background:var(--accent);opacity:.35"></i><i style="position:absolute;inset:0 auto 0 0;width:${per[k].paid/mx*100}%;background:var(--ok)"></i></div></div>`).join(''):'<div style="color:var(--dim);font-size:13px">Atribua idiomas na Produção e eles aparecem aqui.</div>'; })()}
     </div>
     <div class="chart-card"><h4 class="display">Por área</h4>
       ${t.actual?Object.keys(CATS).filter(c=>t.byCat[c].actual).sort((a,b)=>t.byCat[b].actual-t.byCat[a].actual).map(c=>{ const v=t.byCat[c].actual, w=Math.round(v/t.actual*100); return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><span><i class="cat-dot" style="background:${CATS[c][1]}"></i>${CATS[c][0]}</span><span class="mono">${brl(v)} · ${w}%</span></div><div style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${CATS[c][1]}"></i></div></div>`; }).join(''):'<div style="color:var(--dim);font-size:13px">Sem valores ainda.</div>'}
@@ -929,7 +957,7 @@ function finFilmView(){
   <div class="card"><div class="tbl-wrap"><table style="min-width:820px"><thead><tr><th>Área</th><th>Pessoa</th><th>O quê</th><th style="text-align:right">Valor</th><th style="text-align:center">Pago</th><th></th></tr></thead><tbody>
     ${lines.map(l=>`<tr class="fin-row ${l.paid?'':''}">
       <td><span style="white-space:nowrap"><i class="cat-dot" style="background:${CATS[l.cat]?.[1]||'#999'}"></i>${CATS[l.cat]?.[0]||l.cat}</span></td>
-      <td><b>${esc(userName(l.uid))}</b></td>
+      <td><b>${l.uid?esc(userName(l.uid)):'<span style="color:var(--ok)">✋ livre</span>'}</b></td>
       <td>${flagImg(l.desc.replace(/^Revisão · /,''))} ${esc(l.desc)}</td>
       <td style="text-align:right;white-space:nowrap">${l.custom?`<button class="icon-btn" title="Voltar ao preço padrão (${brl(l.def)})" data-act="finLineReset" data-id="${l.key}">↺</button>`:''}<input class="in money" style="width:120px;${l.custom?'border-color:var(--amber)':''}" data-line="${l.key}" data-k="amount" value="${num(l.amount)}"></td>
       <td style="text-align:center"><input type="checkbox" data-line="${l.key}" data-k="paid" ${l.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)"></td>
@@ -1059,6 +1087,10 @@ const ACT={
   },
   moveUp(id){ moveQueue(id,-1); }, moveDown(id){ moveQueue(id,1); },
   assign(){ assignModal(); },
+  claimTask(id){ const t=tasks.find(x=>x.id===id); if(!t||t.editorUid) return; run(api.updateTask(selId,id,{editorUid:me.uid,updatedAt:Date.now(),updatedBy:me.uid}),`Você pegou ${t.lang}!`); },
+  claimRev(id){ const t=tasks.find(x=>x.id===id); if(!t||t.reviewerUid) return; run(api.updateTask(selId,id,{reviewerUid:me.uid,updatedAt:Date.now(),updatedBy:me.uid}),`Você vai revisar ${t.lang}!`); },
+  async releaseTask(id){ const t=tasks.find(x=>x.id===id); if(!await confirmBox('Devolver idioma?',`<b>${esc(t.lang)}</b> volta para “Disponíveis” e outra pessoa pode pegar.`,'Devolver')) return; run(api.updateTask(selId,id,{editorUid:'',updatedAt:Date.now(),updatedBy:me.uid})); },
+  async releaseRev(id){ const t=tasks.find(x=>x.id===id); if(!await confirmBox('Largar revisão?',`A revisão de <b>${esc(t.lang)}</b> fica sem revisor e outro revisor pode pegar.`,'Largar')) return; run(api.updateTask(selId,id,{reviewerUid:'',updatedAt:Date.now(),updatedBy:me.uid})); },
   async delTask(id){ const t=tasks.find(x=>x.id===id); if(!await confirmBox('Remover idioma?',`Remover <b>${esc(t.lang)}</b> de ${esc(userName(t.editorUid))}?`,'Remover',true)) return; run(api.deleteTask(selId,id)); },
   newUser(){ userModal(null); },
   editUser(id){ userModal(users.find(u=>u.uid===id)); },
@@ -1199,7 +1231,7 @@ function assignModal(){
     <div class="modal-b">
       <div class="field"><span>Área</span><div class="checks" id="as-area">${AREAS.map(a=>`<span class="check ${a.id===area?'on':''}" data-v="${a.id}">${a.name}</span>`).join('')}</div></div>
       <div class="row2"><label class="field"><span>Editor</span><select class="in" id="as-ed"></select></label>
-        <label class="field"><span>Revisor</span><select class="in" id="as-rv"><option value="">— sem revisor —</option>${act.filter(u=>(u.roles||[]).includes('revisor')).map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join('')}</select></label></div>
+        <label class="field"><span>Revisor</span><select class="in" id="as-rv"><option value="">👀 Livre — um revisor pega</option>${act.filter(u=>(u.roles||[]).includes('revisor')).map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join('')}</select></label></div>
       <div class="row2"><label class="field"><span>Início</span><input type="date" class="in" id="as-start"></label>
         <label class="field"><span>Entrega</span><input type="date" class="in" id="as-del"></label></div>
       <label class="field"><span>Urgência</span><select class="in" id="as-urg">${Object.entries(URG).map(([k,v])=>`<option value="${k}" ${k==='media'?'selected':''}>${v}</option>`).join('')}</select></label>
@@ -1208,17 +1240,16 @@ function assignModal(){
     </div>
     <div class="modal-f"><button class="btn" data-close>Cancelar</button><button class="btn primary" id="as-save">Atribuir</button></div>`);
   bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
-  const fillEd=()=>{ const l=editorsFor(area); bg.querySelector('#as-ed').innerHTML=l.length?l.map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join(''):'<option value="">— cadastre funcionários na Equipe —</option>'; };
+  const fillEd=()=>{ const l=editorsFor(area); bg.querySelector('#as-ed').innerHTML='<option value="">✋ Livre — quem quiser pega</option>'+l.map(u=>`<option value="${u.uid}">${esc(u.name)}</option>`).join(''); };
   fillEd();
   bg.querySelector('#as-area').onclick=e=>{ const c=e.target.closest('.check'); if(!c) return; area=c.dataset.v; bg.querySelectorAll('#as-area .check').forEach(x=>x.classList.toggle('on',x===c)); fillEd(); };
   bg.querySelector('#as-save').onclick=async()=>{
     const names=bg.querySelector('#as-langs').value.split(/\n|,/).map(x=>x.trim()).filter(Boolean);
     const editorUid=bg.querySelector('#as-ed').value;
-    if(!editorUid){ toast('Escolha o editor.',true); return; }
     if(!names.length){ toast('Digite pelo menos um idioma.',true); return; }
     const base=Date.now(), start=bg.querySelector('#as-start').value, delivery=bg.querySelector('#as-del').value;
     const list=names.map((lang,i)=>({area,editorUid,lang,reviewerUid:bg.querySelector('#as-rv').value,urgency:bg.querySelector('#as-urg').value,status:'pendente',reviewStatus:'pendente',start,delivery,order:base+i,createdAt:base}));
-    await run(api.addTasks(selId,list),`${list.length} idioma(s) atribuído(s) a ${userName(editorUid)}.`);
+    await run(api.addTasks(selId,list),editorUid?`${list.length} idioma(s) atribuído(s) a ${userName(editorUid)}.`:`${list.length} idioma(s) liberado(s) para a equipe pegar.`);
     tab=area; closeModal(); render();
   };
 }
