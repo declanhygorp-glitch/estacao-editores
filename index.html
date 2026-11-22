@@ -861,6 +861,7 @@ const PRICE_AREAS = {material:'Material / separador (por filme)',vocal:'Vocal (p
 const defaultPrices = () => ({material:0,vocal:0,efeitos:0,musica:0,revisao:0,...((finance._prices||{}).prices||{})});
 const filmPrices = fid => { const d=defaultPrices(), o=finDoc(fid).prices||{}; Object.keys(o).forEach(k=>{ if(o[k]!==''&&o[k]!=null) d[k]=num(o[k]); }); return d; };
 const normTxt = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s*(5\.1|2\.0|7\.1)\s*/g,'').trim();
+const isAdminUid = uid => { if(!uid) return false; const u=users.find(x=>x.uid===uid); return !!u&&(((u.roles||[]).includes('admin'))||(u.email||'').toLowerCase()===OWNER_EMAIL); };
 const matUsers = () => users.filter(u=>u.active!==false&&(u.roles||[]).includes('material'));
 const filmMaterialUid = f => !f ? '' : (f.materialUid!==undefined ? (f.materialUid||'') : (matUsers().length===1 ? matUsers()[0].uid : ''));
 // linhas automáticas: vêm da Produção (quem editou cada idioma e quem revisou)
@@ -872,9 +873,9 @@ function filmLines(fid){
     out.push({key:t.id+':e',cat:t.area,uid:t.editorUid||'',desc:t.lang+(t.editorUid?'':' (ninguém pegou ainda)'),def:num(P[t.area])});
     if(t.reviewerUid) out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid,desc:'Revisão · '+t.lang,def:num(P.revisao)});
   });
-  return out.map(l=>{ const o=saved[l.key]||{}, has=o.amount!=null&&o.amount!==''; return {...l,amount:has?num(o.amount):l.def,custom:has&&num(o.amount)!==l.def,paid:!!o.paid}; });
+  return out.map(l=>{ if(isAdminUid(l.uid)) return {...l,def:0,amount:0,custom:false,paid:false,adminUser:true}; const o=saved[l.key]||{}, has=o.amount!=null&&o.amount!==''; return {...l,amount:has?num(o.amount):l.def,custom:has&&num(o.amount)!==l.def,paid:!!o.paid}; });
 }
-const filmExtras = fid => (finDoc(fid).items||[]).map(i=>({...i,amount:i.amount!=null?num(i.amount):num(i.actual||i.planned)}));
+const filmExtras = fid => (finDoc(fid).items||[]).map(i=>({...i,adminUser:isAdminUid(i.uid),amount:isAdminUid(i.uid)?0:(i.amount!=null?num(i.amount):num(i.actual||i.planned))}));
 function filmTotals(fid){
   const t={planned:0,actual:0,paid:0,byCat:{}};
   Object.keys(CATS).forEach(c=>t.byCat[c]={planned:0,actual:0});
@@ -974,7 +975,7 @@ function finFilmView(){
   </div>
   <div class="fin-grid">
     <div class="chart-card"><h4 class="display">Quanto cada um recebe neste filme</h4>
-      ${(()=>{ const per={}; [...lines,...extras].forEach(x=>{ const k=x.uid||'_'; per[k]=per[k]||{amount:0,paid:0,n:0}; per[k].amount+=x.amount; if(x.paid) per[k].paid+=x.amount; per[k].n++; }); const ks=Object.keys(per).sort((a,b)=>per[b].amount-per[a].amount); const mx=Math.max(1,...ks.map(k=>per[k].amount));
+      ${(()=>{ const per={}; [...lines,...extras].filter(x=>!x.adminUser).forEach(x=>{ const k=x.uid||'_'; per[k]=per[k]||{amount:0,paid:0,n:0}; per[k].amount+=x.amount; if(x.paid) per[k].paid+=x.amount; per[k].n++; }); const ks=Object.keys(per).sort((a,b)=>per[b].amount-per[a].amount); const mx=Math.max(1,...ks.map(k=>per[k].amount));
         return ks.length?ks.map(k=>`<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:13px;gap:8px"><span><b>${esc(k==='_'?'Livre (ninguém pegou)':userName(k))}</b> <small style="color:var(--dim)">${per[k].n} item(ns)</small></span><span class="mono">${brl(per[k].amount)} ${per[k].paid>=per[k].amount&&per[k].amount?'<span style="color:var(--ok)">✓ pago</span>':`<small style="color:var(--muted)">pago ${brl(per[k].paid)}</small>`}</span></div><div style="height:8px;border-radius:9px;background:var(--panel3);margin-top:5px;overflow:hidden;position:relative"><i style="position:absolute;inset:0 auto 0 0;width:${per[k].amount/mx*100}%;background:var(--accent);opacity:.35"></i><i style="position:absolute;inset:0 auto 0 0;width:${per[k].paid/mx*100}%;background:var(--ok)"></i></div></div>`).join(''):'<div style="color:var(--dim);font-size:13px">Atribua idiomas na Produção e eles aparecem aqui.</div>'; })()}
     </div>
     <div class="chart-card"><h4 class="display">Por área</h4>
@@ -987,23 +988,23 @@ function finFilmView(){
     ${pend?`<button class="btn" data-act="finPayAll">✓ Marcar tudo como pago</button>`:''}
     <button class="btn primary" data-act="finAdd">+ Extra / bônus</button></div>
   <div class="card"><div class="tbl-wrap"><table style="min-width:820px"><thead><tr><th>Área</th><th>Pessoa</th><th>O quê</th><th style="text-align:right">Valor</th><th style="text-align:center">Pago</th><th></th></tr></thead><tbody>
-    ${lines.map(l=>`<tr class="fin-row ${l.paid?'':''}">
+    ${lines.map(l=>`<tr class="fin-row" style="${l.adminUser?'opacity:.5':''}">
       <td><span style="white-space:nowrap"><i class="cat-dot" style="background:${CATS[l.cat]?.[1]||'#999'}"></i>${CATS[l.cat]?.[0]||l.cat}</span></td>
       <td><b>${l.uid?esc(userName(l.uid)):'<span style="color:var(--ok)">✋ livre</span>'}</b></td>
       <td>${flagImg(l.desc.replace(/^Revisão · /,''))} ${esc(l.desc)}</td>
-      <td style="text-align:right;white-space:nowrap">${l.custom?`<button class="icon-btn" title="Voltar ao preço padrão (${brl(l.def)})" data-act="finLineReset" data-id="${l.key}">↺</button>`:''}<input class="in money" style="width:120px;${l.custom?'border-color:var(--amber)':''}" data-line="${l.key}" data-k="amount" value="${num(l.amount)}"></td>
-      <td style="text-align:center"><input type="checkbox" data-line="${l.key}" data-k="paid" ${l.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)"></td>
+      <td style="text-align:right;white-space:nowrap">${l.adminUser?`<span style="color:var(--muted);font-size:12.5px">sócio · não recebe</span>`:l.custom?`<button class="icon-btn" title="Voltar ao preço padrão (${brl(l.def)})" data-act="finLineReset" data-id="${l.key}">↺</button>`:''}${l.adminUser?'':`<input class="in money" style="width:120px;${l.custom?'border-color:var(--amber)':''}" data-line="${l.key}" data-k="amount" value="${num(l.amount)}">`}</td>
+      <td style="text-align:center">${l.adminUser?'—':`<input type="checkbox" data-line="${l.key}" data-k="paid" ${l.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)">`}</td>
       <td><small style="color:var(--dim)">auto</small></td></tr>`).join('')}
     ${extras.map(i=>`<tr class="fin-row">
       <td><select class="in" data-fin="${i.id}" data-k="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===i.cat?'selected':''}>${v[0]}</option>`).join('')}</select></td>
       <td><select class="in" data-fin="${i.id}" data-k="uid"><option value="">—</option>${people.map(u=>`<option value="${u.uid}" ${u.uid===i.uid?'selected':''}>${esc(u.name)}</option>`).join('')}</select></td>
       <td><input class="in" data-fin="${i.id}" data-k="desc" value="${esc(i.desc||'')}" placeholder="ex.: bônus por entregar no prazo"></td>
-      <td style="text-align:right"><input class="in money" style="width:120px" data-fin="${i.id}" data-k="amount" value="${i.amount?num(i.amount):''}" placeholder="0,00"></td>
+      <td style="text-align:right">${i.adminUser?`<span style="color:var(--muted);font-size:12.5px">sócio · não recebe</span>`:`<input class="in money" style="width:120px" data-fin="${i.id}" data-k="amount" value="${i.amount?num(i.amount):''}" placeholder="0,00">`}</td>
       <td style="text-align:center"><input type="checkbox" data-fin="${i.id}" data-k="paid" ${i.paid?'checked':''} style="width:18px;height:18px;accent-color:var(--ok)"></td>
       <td><button class="icon-btn del" data-act="finDel" data-id="${i.id}">✕</button></td></tr>`).join('')}
     ${!lines.length&&!extras.length?`<tr><td colspan="6"><div class="empty" style="padding:30px">Nada ainda. Quando você atribuir idiomas na Produção (editor e revisor), eles aparecem aqui sozinhos.</div></td></tr>`:''}
     ${lines.length||extras.length?`<tr><td colspan="3" style="text-align:right;font-weight:700">TOTAL</td><td class="money" style="font-weight:700;color:var(--accent)">${brl(t.actual)}</td><td colspan="2" style="font-size:12px;color:var(--muted)">pago ${brl(t.paid)}</td></tr>`:''}
-  </tbody></table></div><div class="foot-note">As linhas “auto” vêm da Produção. Para mudar o valor de alguém, digite e clique fora (fica amarelo; ↺ volta ao padrão). Bônus e gastos extras: “+ Extra / bônus”.</div></div>`;
+  </tbody></table></div><div class="foot-note">Administradores / sócios não recebem por filme: as linhas deles ficam apagadas e valem R$ 0. As linhas “auto” vêm da Produção. Para mudar o valor de alguém, digite e clique fora (fica amarelo; ↺ volta ao padrão). Bônus e gastos extras: “+ Extra / bônus”.</div></div>`;
 }
 function finMonthView(){
   const m=finMonth, mt=monthTotals(m);
