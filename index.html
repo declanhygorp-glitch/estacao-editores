@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Estação de Editores</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230b0b0d%27 stroke=%27%23e11d2e%27 stroke-width=%274%27/%3E%3Cpath d=%27M18 16h28v6L26 42h20v6H18v-6l20-20H18z%27 fill=%27%23e11d2e%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -804,8 +805,8 @@ function rowHtml(t,i){
     <td><span class="sbar s-${t.status}"></span></td>
     <td>${ad?`<input class="in" style="font-weight:600;min-width:170px" data-t="${t.id}" data-f="lang" value="${esc(t.lang)}">`:`<div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}${t.editorUid===me.uid&&(t.status||'pendente')==='pendente'&&!closed?`<button class="icon-btn" style="margin-left:auto" title="Devolver este idioma (volta para Disponíveis)" data-act="releaseTask" data-id="${t.id}">↩</button>`:''}</div>`}</td>
     <td class="num mono">${i+1}</td>
-    <td><input type="date" class="in" data-t="${t.id}" data-f="start" value="${esc(t.start||'')}" ${ed?'':'disabled'}></td>
-    <td><input type="date" class="in" data-t="${t.id}" data-f="delivery" value="${esc(t.delivery||'')}" ${ed?'':'disabled'}></td>
+    <td><input type="date" class="in" data-t="${t.id}" data-f="start" value="${esc(t.start||'')}" ${ad?'':'disabled title="Só administradores mudam as datas"'}></td>
+    <td><input type="date" class="in" data-t="${t.id}" data-f="delivery" value="${esc(t.delivery||'')}" ${ad?'':'disabled title="Só administradores mudam as datas"'}></td>
     <td>${selectHtml('urgency',URG,t.urgency||'media',ad,'u-',t.id)}</td>
     <td>${ad?`<select class="in" data-t="${t.id}" data-f="reviewerUid"><option value="">— sem revisor —</option>${reviewers.map(u=>`<option value="${u.uid}" ${u.uid===t.reviewerUid?'selected':''}>${esc(u.name)}</option>`).join('')}${t.reviewerUid&&!reviewers.some(u=>u.uid===t.reviewerUid)?`<option value="${t.reviewerUid}" selected>${esc(userName(t.reviewerUid))}</option>`:''}</select>`
       :!t.reviewerUid&&has('revisor')&&t.editorUid!==me.uid&&!closed?`<button class="btn sm" style="border-color:var(--amber);color:var(--amber);width:100%;justify-content:center" data-act="claimRev" data-id="${t.id}" ${myOpen().rv.length&&!canManage()?'title="Termine suas revisões em aberto primeiro"':''}>${myOpen().rv.length&&!canManage()?'🔒':'👀'} Pegar revisão</button>`
