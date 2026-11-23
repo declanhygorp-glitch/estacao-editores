@@ -346,7 +346,30 @@ const normUser = u => String(u||'').normalize('NFD').replace(/[\u0300-\u036f]/g,
 const fakeEmail = u => `${u}-${Math.random().toString(36).slice(2,7)}@estacao-editores.firebaseapp.com`;
 const uidGen = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
 const store = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
-function flagCode(lang){ const base=String(lang||'').replace(/\s*(5\.1|2\.0|7\.1|stereo|est[ée]reo)\s*$/i,'').trim().toLowerCase(); const f=LANGS.find(l=>l[0].toLowerCase()===base); return f?f[1]:null; }
+const _nl = x => String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\(.*?\)/g,' ').replace(/\b(5\.1|2\.0|7\.1|stereo|estereo|dublado|dub|vocal|audio)\b/g,' ').replace(/[^a-z\/ ]/g,' ').replace(/\s+/g,' ').trim();
+const FLAG_ALIAS = {
+  ingles:'us',english:'us',ing:'us',eng:'us',americano:'us',britanico:'gb',british:'gb','ingles uk':'gb','ingles br':'gb',
+  portugues:'br','portugues br':'br','portugues brasil':'br',brasileiro:'br',portuguese:'br',pt:'br','portugues pt':'pt','portugues portugal':'pt',portugal:'pt',
+  espanhol:'es',spanish:'es',castelhano:'es',espanol:'es','espanhol latam':'mx','espanhol latino':'mx',latino:'mx',mexicano:'mx',
+  frances:'fr',french:'fr',francais:'fr',alemao:'de',german:'de',deutsch:'de',italiano:'it',italian:'it',
+  russo:'ru',russian:'ru',ucraniano:'ua',ukrainian:'ua',georgiano:'ge',georgian:'ge',uzbeque:'uz',uzbek:'uz',cazaque:'kz',kazakh:'kz',
+  hindi:'in',tamil:'in',tamul:'in',telugu:'in',malaiala:'in',malayalam:'in',kannada:'in',canares:'in','kannada/canares':'in',bengali:'bd',bangla:'bd',
+  hungaro:'hu',hungarian:'hu',japones:'jp',japanese:'jp',coreano:'kr',korean:'kr',chines:'cn',chinese:'cn',mandarim:'cn',mandarin:'cn',cantones:'hk',
+  polones:'pl',polish:'pl',tailandes:'th',thai:'th',tcheco:'cz',czech:'cz',turco:'tr',turkish:'tr',arabe:'sa',arabic:'sa',
+  indonesio:'id',indonesian:'id',vietnamita:'vn',vietnamese:'vn',holandes:'nl',dutch:'nl',romeno:'ro',romanian:'ro',grego:'gr',greek:'gr',
+  sueco:'se',swedish:'se',hebraico:'il',hebrew:'il',persa:'ir',persian:'ir',farsi:'ir',filipino:'ph',tagalo:'ph',tagalog:'ph',malaio:'my',malay:'my',
+  noruegues:'no',norwegian:'no',dinamarques:'dk',danish:'dk',finlandes:'fi',finnish:'fi',bulgaro:'bg',bulgarian:'bg',croata:'hr',croatian:'hr',
+  servio:'rs',serbian:'rs',eslovaco:'sk',slovak:'sk',esloveno:'si',lituano:'lt',letao:'lv',estoniano:'ee',catalao:'es',basco:'es',galego:'es',
+  urdu:'pk',marati:'in',marathi:'in',gujarati:'in',punjabi:'in',azerbaijano:'az',armenio:'am',albanes:'al',islandes:'is',suaili:'ke',swahili:'ke'
+};
+function flagCode(lang){
+  const n=_nl(lang); if(!n) return null;
+  if(FLAG_ALIAS[n]) return FLAG_ALIAS[n];
+  const f=LANGS.find(l=>_nl(l[0])===n); if(f) return f[1];
+  const w=n.split(' ')[0]; if(FLAG_ALIAS[w]) return FLAG_ALIAS[w];
+  const g=LANGS.find(l=>_nl(l[0]).split(' ')[0]===w); if(g) return g[1];
+  const k=Object.keys(FLAG_ALIAS).find(a=>a.length>=4&&(n.startsWith(a)||a.startsWith(n)&&n.length>=4)); return k?FLAG_ALIAS[k]:null;
+}
 function flagImg(lang){ const c=flagCode(lang); return c?`<img class="flag" src="https://flagcdn.com/w40/${c}.png" alt="" onerror="this.remove()">`:''; }
 const langChip = l => `<span class="chip">${flagImg(l)}${esc(l)}</span>`;
 function posterHtml(f){ return f.poster ? `<img src="${esc(f.poster)}" alt="">` : `<div class="ph">${esc(initials(f.title))}</div>`; }
@@ -803,7 +826,7 @@ function rowHtml(t,i){
   const reviewers=users.filter(u=>u.active!==false&&(u.roles||[]).includes('revisor'));
   return `<tr class="${t.editorUid===me.uid||t.reviewerUid===me.uid?'mine':''}">
     <td><span class="sbar s-${t.status}"></span></td>
-    <td>${ad?`<input class="in" style="font-weight:600;min-width:170px" data-t="${t.id}" data-f="lang" value="${esc(t.lang)}">`:`<div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}${t.editorUid===me.uid&&(t.status||'pendente')==='pendente'&&!closed?`<button class="icon-btn" style="margin-left:auto" title="Devolver este idioma (volta para Disponíveis)" data-act="releaseTask" data-id="${t.id}">↩</button>`:''}</div>`}</td>
+    <td>${ad?`<div style="display:flex;align-items:center;gap:8px;min-width:190px">${flagImg(t.lang)||'<span class="flag" style="display:inline-block;background:var(--panel3)"></span>'}<input class="in" style="font-weight:600" data-t="${t.id}" data-f="lang" value="${esc(t.lang)}"></div>`:`<div class="lang-cell">${flagImg(t.lang)}${esc(t.lang)}${t.editorUid===me.uid&&(t.status||'pendente')==='pendente'&&!closed?`<button class="icon-btn" style="margin-left:auto" title="Devolver este idioma (volta para Disponíveis)" data-act="releaseTask" data-id="${t.id}">↩</button>`:''}</div>`}</td>
     <td class="num mono">${i+1}</td>
     <td><input type="date" class="in" data-t="${t.id}" data-f="start" value="${esc(t.start||'')}" ${ad?'':'disabled title="Só administradores mudam as datas"'}></td>
     <td><input type="date" class="in" data-t="${t.id}" data-f="delivery" value="${esc(t.delivery||'')}" ${ad?'':'disabled title="Só administradores mudam as datas"'}></td>
