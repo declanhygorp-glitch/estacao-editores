@@ -896,7 +896,7 @@ function filmLines(fid){
   if(fm) out.push({key:'material',cat:'material',uid:mu||'',desc:'Separação do material'+(mu?'':' (ninguém pegou ainda)'),def:num(P.material)});
   [...(allTasks[fid]||[])].sort((a,b)=>(a.area>b.area?1:a.area<b.area?-1:0)||userName(a.editorUid).localeCompare(userName(b.editorUid))||(a.order||0)-(b.order||0)).forEach(t=>{
     out.push({key:t.id+':e',cat:t.area,uid:t.editorUid||'',desc:t.lang+(t.editorUid?'':' (ninguém pegou ainda)'),def:num(P[t.area])});
-    if(t.reviewerUid) out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid,desc:'Revisão · '+t.lang,def:num(P.revisao)});
+    out.push({key:t.id+':r',cat:'revisao',uid:t.reviewerUid||'',desc:'Revisão · '+t.lang+(t.reviewerUid?'':' (ninguém pegou ainda)'),def:num(P.revisao)});
   });
   return out.map(l=>{ if(isAdminUid(l.uid)) return {...l,def:0,amount:0,custom:false,paid:false,adminUser:true}; const o=saved[l.key]||{}, has=o.amount!=null&&o.amount!==''; return {...l,amount:has?num(o.amount):l.def,custom:has&&num(o.amount)!==l.def,paid:!!o.paid}; });
 }
